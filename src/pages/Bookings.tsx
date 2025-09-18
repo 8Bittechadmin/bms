@@ -5,7 +5,7 @@ import PageHeader from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Calendar, List, Plus, Filter, Search, X, Eye, Edit, Download } from 'lucide-react';
+import { Calendar, List, Plus, Filter, Search, X, Eye, Edit, Download, FileText, Printer, Copy, Share2, CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import BookingCalendar from '@/components/Bookings/BookingCalendar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isBefore, startOfToday } from 'date-fns';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 interface Venue {
   id: string;
@@ -49,20 +50,21 @@ const Bookings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  
+  const [copied, setCopied] = useState(false);
+
   const navigate = useNavigate();
-  
+
   const { data: bookingsData = [], isLoading, error } = useQuery({
     queryKey: ['bookings'],
     queryFn: async () => {
       console.log('Fetching bookings...');
-      
+
       // First, fetch the bookings data
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
         .order('start_date', { ascending: false }); // Changed to descending to show recent bookings first
-      
+
       if (bookingsError) {
         console.error('Error fetching bookings:', bookingsError);
         throw bookingsError;
@@ -86,7 +88,7 @@ const Bookings: React.FC = () => {
       if (clientsData) {
         clientsData.forEach(client => clientsMap.set(client.id, client));
       }
-      
+
       if (venuesData) {
         venuesData.forEach(venue => venuesMap.set(venue.id, venue));
       }
@@ -100,26 +102,26 @@ const Bookings: React.FC = () => {
 
       console.log('Formatted bookings:', formattedBookings);
       console.log('Total bookings found:', formattedBookings.length);
-      
+
       return formattedBookings;
     },
   });
-  
+
   // Log any query errors
   useEffect(() => {
     if (error) {
       console.error('Bookings query error:', error);
     }
   }, [error]);
-  
+
   const filteredBookings = bookingsData.filter(booking => {
     console.log('Filtering booking:', booking.id, 'status:', booking.status, 'activeTab:', activeTab);
-    
+
     // Filter by status
     if (activeTab !== 'all' && booking.status !== activeTab) {
       return false;
     }
-    
+
     // Filter by search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -129,18 +131,18 @@ const Bookings: React.FC = () => {
         (booking.client?.name || '').toLowerCase().includes(searchLower) ||
         (booking.venue?.name || '').toLowerCase().includes(searchLower)
       );
-      
+
       if (!matchesSearch) {
         return false;
       }
     }
-    
+
     return true;
   });
-  
+
   console.log('Filtered bookings count:', filteredBookings.length);
   console.log('Filtered bookings:', filteredBookings);
-  
+
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'confirmed': return 'bg-green-100 text-green-800 hover:bg-green-200';
@@ -155,11 +157,10 @@ const Bookings: React.FC = () => {
     console.log('isPastBooking check:', startDate, 'is past:', result);
     return result;
   };
-  
-  // Export bookings as CSV
-  const handleExport = () => {
-    if (!filteredBookings.length) return;
 
+  // Export as CSV
+  const handleExportCSV = () => {
+    if (!filteredBookings.length) return;
     const headers = [
       'ID',
       'Client',
@@ -177,7 +178,6 @@ const Bookings: React.FC = () => {
       'Created At',
       'Updated At'
     ];
-
     const rows = filteredBookings.map(b => [
       b.id,
       b.client?.name || '',
@@ -195,12 +195,10 @@ const Bookings: React.FC = () => {
       b.created_at,
       b.updated_at
     ]);
-
     const csvContent =
       [headers, ...rows]
         .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
         .join('\r\n');
-
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -208,6 +206,67 @@ const Bookings: React.FC = () => {
     a.download = 'bookings.csv';
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  // Export as PDF (placeholder)
+  const handleExportPDF = () => {
+    alert('Export as PDF is not implemented yet.');
+  };
+
+  // Print (placeholder)
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Copy to clipboard
+  const handleCopyToClipboard = async () => {
+    if (!filteredBookings.length) return;
+    const headers = [
+      'ID',
+      'Client',
+      'Event Name',
+      'Event Type',
+      'Venue',
+      'Start Date',
+      'End Date',
+      'Guests',
+      'Total Amount',
+      'Deposit Amount',
+      'Deposit Paid',
+      'Status',
+      'Notes',
+      'Created At',
+      'Updated At'
+    ];
+    const rows = filteredBookings.map(b => [
+      b.id,
+      b.client?.name || '',
+      b.event_name,
+      b.event_type,
+      b.venue?.name || '',
+      b.start_date,
+      b.end_date,
+      b.guest_count,
+      b.total_amount ?? '',
+      b.deposit_amount ?? '',
+      b.deposit_paid ? 'Yes' : 'No',
+      b.status,
+      b.notes ?? '',
+      b.created_at,
+      b.updated_at
+    ]);
+    const textContent =
+      [headers, ...rows]
+        .map(row => row.join('\t'))
+        .join('\n');
+    await navigator.clipboard.writeText(textContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  // Share (placeholder)
+  const handleShare = () => {
+    alert('Share functionality is not implemented yet.');
   };
 
   return (
@@ -254,18 +313,41 @@ const Bookings: React.FC = () => {
             <List className="h-4 w-4" />
             <span className="hidden sm:inline ml-2">List</span>
           </Button>
-          {/* Export Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-2"
-            onClick={handleExport}
-            disabled={!filteredBookings.length}
-            title="Export bookings as CSV"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline ml-2">Export</span>
-          </Button>
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-2" disabled={!filteredBookings.length}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileText className="h-4 w-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyToClipboard}>
+                {copied ? (
+                  <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                Copy to clipboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
