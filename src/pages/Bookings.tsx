@@ -5,7 +5,7 @@ import PageHeader from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Calendar, List, Plus, Filter, Search, X, Eye, Edit } from 'lucide-react';
+import { Calendar, List, Plus, Filter, Search, X, Eye, Edit, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -156,6 +156,60 @@ const Bookings: React.FC = () => {
     return result;
   };
   
+  // Export bookings as CSV
+  const handleExport = () => {
+    if (!filteredBookings.length) return;
+
+    const headers = [
+      'ID',
+      'Client',
+      'Event Name',
+      'Event Type',
+      'Venue',
+      'Start Date',
+      'End Date',
+      'Guests',
+      'Total Amount',
+      'Deposit Amount',
+      'Deposit Paid',
+      'Status',
+      'Notes',
+      'Created At',
+      'Updated At'
+    ];
+
+    const rows = filteredBookings.map(b => [
+      b.id,
+      b.client?.name || '',
+      b.event_name,
+      b.event_type,
+      b.venue?.name || '',
+      b.start_date,
+      b.end_date,
+      b.guest_count,
+      b.total_amount ?? '',
+      b.deposit_amount ?? '',
+      b.deposit_paid ? 'Yes' : 'No',
+      b.status,
+      b.notes ?? '',
+      b.created_at,
+      b.updated_at
+    ]);
+
+    const csvContent =
+      [headers, ...rows]
+        .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+        .join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bookings.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <AppLayout>
       <PageHeader 
@@ -199,6 +253,18 @@ const Bookings: React.FC = () => {
           >
             <List className="h-4 w-4" />
             <span className="hidden sm:inline ml-2">List</span>
+          </Button>
+          {/* Export Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-2"
+            onClick={handleExport}
+            disabled={!filteredBookings.length}
+            title="Export bookings as CSV"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline ml-2">Export</span>
           </Button>
         </div>
       </div>
