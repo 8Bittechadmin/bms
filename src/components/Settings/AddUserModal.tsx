@@ -24,37 +24,31 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ open, onOpenChange }) => {
 
   const createUser = useMutation({
     mutationFn: async (values: { username: string; role: string; password: string }) => {
-      // Create auth user via Supabase Auth (client signUp). Username is treated as email here.
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: values.username,
-        password: values.password,
-      });
-      if (signUpError) throw signUpError;
-
-      const authUserId = (signUpData as any)?.user?.id || null;
-
-      // Insert profile into local `users` table (do not store password). If the
-      // `auth_user_id` column exists, populate it so we can reliably link profiles
-      // to Auth users.
-      const insertPayload: any = {
+      console.debug('[AddUserModal] Creating user with values:', values);
+      
+      // Insert directly into users table (no Supabase Auth needed)
+      const { data, error } = await supabase.from('users').insert({
         username: values.username,
         role: values.role,
-        password: null,
-      };
-      if (authUserId) insertPayload.auth_user_id = authUserId;
+        password: values.password,
+      }).select();
 
-      const { data, error } = await supabase.from('users').insert(insertPayload).select();
-
-      if (error) throw error;
-      console.debug('[AddUserModal] User inserted successfully:', { authUserId, profile: data });
-      return { auth: signUpData, profile: data };
+      if (error) {
+        console.error('[AddUserModal] Insert error:', error);
+        throw error;
+      }
+      
+      console.debug('[AddUserModal] User inserted successfully:', data);
+      return data;
     },
     onSuccess: () => {
-      toast({ title: 'User created', description: 'New user has been added and signup email sent.' });
+      toast({ title: 'User created', description: 'New user has been added successfully.' });
       queryClient.invalidateQueries({ queryKey: ['users'] });
       onOpenChange(false);
     },
     onError: (err: any) => {
+      console.error('[AddUserModal] Error creating user:', err);
+      console.error('[AddUserModal] Full error details:', JSON.stringify(err, null, 2));
       toast({ title: 'Error', description: `Failed to create user: ${err.message}`, variant: 'destructive' });
     }
   });

@@ -17,25 +17,25 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ open, onOpenChange, user 
   const updateUser = useMutation({
     mutationFn: async (values: { username: string; role: string; password?: string }) => {
       if (!user) throw new Error('No user selected');
+      
+      console.debug('[EditUserModal] Updating user:', { userId: user.id, values });
+      
       const payload: any = {
         username: values.username,
         role: values.role,
       };
-      // We don't update password directly in users table when using Supabase Auth.
-      // If password is provided, trigger a password reset email to the user's email.
-      const { data, error } = await supabase.from('users').update(payload).eq('id', user.id).select();
-      if (error) throw error;
-      console.debug('[EditUserModal] User updated successfully:', { userId: user.id, payload, data });
-
-      if (values.password) {
-        // Trigger password reset email for the provided username (treated as email)
-        try {
-          await supabase.auth.resetPasswordForEmail(values.username);
-        } catch (e: any) {
-          // non-fatal; notify the admin
-          throw new Error(`Profile updated but failed to send reset email: ${e.message}`);
-        }
+      
+      // If password is provided, update it as well
+      if (values.password && values.password.trim()) {
+        payload.password = values.password;
       }
+
+      const { data, error } = await supabase.from('users').update(payload).eq('id', user.id).select();
+      if (error) {
+        console.error('[EditUserModal] Update error:', error);
+        throw error;
+      }
+      console.debug('[EditUserModal] User updated successfully:', { userId: user.id, payload, data });
       return data;
     },
     onSuccess: () => {
@@ -44,6 +44,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ open, onOpenChange, user 
       onOpenChange(false);
     },
     onError: (err: any) => {
+      console.error('[EditUserModal] Error:', err);
       toast({ title: 'Error', description: `Failed to update user: ${err.message}`, variant: 'destructive' });
     }
   });

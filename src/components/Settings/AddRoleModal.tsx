@@ -45,6 +45,8 @@ const AddRoleModal: React.FC<AddRoleModalProps> = ({ open, onOpenChange }) => {
       onOpenChange(false);
     },
     onError: (err: any) => {
+      console.error('[AddRoleModal] Error creating role:', err);
+      console.error('[AddRoleModal] Full error details:', JSON.stringify(err, null, 2));
       toast({ title: 'Error', description: `Failed to create role: ${err.message}`, variant: 'destructive' });
     }
   });
