@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import PageHeader from '@/components/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, List, Plus, CheckSquare } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import CreateEventModal from '@/components/EventPlanning/CreateEventModal';
@@ -23,57 +23,32 @@ const EventPlanning = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
 
-  const queryClient = useQueryClient();
-
-  // Fetch function extracted so we can reuse it for prefetching
-  const fetchBookings = async () => {
-    const start = Date.now();
-    const { data, error } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        venue:venues(*),
-        client:clients(*),
-        wedding_bookings(*)
-      `)
-      .order('start_date', { ascending: false }) as any;
-
-    const duration = Date.now() - start;
-    console.debug('Supabase bookings response', { data, error, duration });
-
-    if (error) throw error;
-    return data || [];
-  };
-
-  // Prefetch bookings on mount to warm React Query cache and reduce perceived load
-  useEffect(() => {
-    queryClient.prefetchQuery({
-      queryKey: ['bookings'],
-      queryFn: fetchBookings,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
-    }).catch(err => console.debug('Prefetch bookings error', err));
-  }, [queryClient]);
-
   const { data: events = [], isLoading, error } = useQuery({
     queryKey: ['bookings'],
-    queryFn: fetchBookings,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 30, // 30 minutes
-    refetchOnWindowFocus: false,
-    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          venue:venues(*),
+          client:clients(*),
+          wedding_bookings(*)
+        `)
+        .order('start_date', { ascending: false }) as any;
+      
+      if (error) throw error;
+      return data || [];
+    },
   });
 
-  useEffect(() => {
-    if (error) {
-      console.error('Error loading events:', error);
-      toast({
-        title: 'Error',
-        description: `Failed to load events. ${error.message || 'Please try again.'}`,
-        variant: 'destructive',
-      });
-    }
-  }, [error]);
+  if (error) {
+    console.error('Error loading events:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to load events. Please try again.',
+      variant: 'destructive',
+    });
+  }
 
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
