@@ -3,11 +3,12 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { exportJsonToXlsx, exportJsonToPdf, exportJsonToCsv } from '@/lib/exportUtils';
 
 interface ExportButtonProps {
   data: any[];
   filename: string;
-  fileType?: 'excel' | 'pdf';
+  fileType?: 'excel' | 'pdf' | 'csv';
   label?: string;
 }
 
@@ -18,7 +19,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({
   label
 }) => {
   const handleExport = () => {
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
       toast({
         title: 'Export failed',
         description: 'There is no data to export.',
@@ -27,12 +28,23 @@ const ExportButton: React.FC<ExportButtonProps> = ({
       return;
     }
 
-    // In a real implementation, this would export data
-    // For now, just show a success message
-    toast({
-      title: 'Export successful',
-      description: `${data.length} records exported to ${filename}.${fileType === 'excel' ? 'xlsx' : 'pdf'}`,
-    });
+    try {
+      if (fileType === 'excel') exportJsonToXlsx(data, filename);
+      else if (fileType === 'pdf') exportJsonToPdf(data, filename);
+      else exportJsonToCsv(data, filename);
+
+      toast({
+        title: 'Export started',
+        description: `${data.length} records being exported to ${filename}`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Export failed',
+        description: 'An error occurred while exporting data',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
