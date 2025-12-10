@@ -59,7 +59,7 @@ const EditRoleModal: React.FC<EditRoleModalProps> = ({ open, onOpenChange, role 
         initialValues={role ? {
           name: role.name,
           permissions: role.permissions ? JSON.stringify(role.permissions) : '',
-          accessible_pages: role.accessible_pages ? role.accessible_pages.join(',') : '',
+          accessible_pages: role.accessible_pages || [],
         } : undefined}
       />
     </FormModal>
