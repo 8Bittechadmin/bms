@@ -25,6 +25,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ open, onOpenChange, user 
       // If password is provided, trigger a password reset email to the user's email.
       const { data, error } = await supabase.from('users').update(payload).eq('id', user.id).select();
       if (error) throw error;
+      console.debug('[EditUserModal] User updated successfully:', { userId: user.id, payload, data });
 
       if (values.password) {
         // Trigger password reset email for the provided username (treated as email)

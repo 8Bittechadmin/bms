@@ -46,6 +46,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ open, onOpenChange }) => {
       const { data, error } = await supabase.from('users').insert(insertPayload).select();
 
       if (error) throw error;
+      console.debug('[AddUserModal] User inserted successfully:', { authUserId, profile: data });
       return { auth: signUpData, profile: data };
     },
     onSuccess: () => {

@@ -36,6 +36,7 @@ const EditRoleModal: React.FC<EditRoleModalProps> = ({ open, onOpenChange, role 
       }).eq('id', role.id).select();
 
       if (error) throw error;
+      console.debug('[EditRoleModal] Role updated successfully:', { roleId: role.id, name: values.name, permissions: perms, accessible_pages: pages, data });
       return data;
     },
     onSuccess: () => {

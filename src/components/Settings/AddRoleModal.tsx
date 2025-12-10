@@ -36,6 +36,7 @@ const AddRoleModal: React.FC<AddRoleModalProps> = ({ open, onOpenChange }) => {
       }).select();
 
       if (error) throw error;
+      console.debug('[AddRoleModal] Role inserted successfully:', { name: values.name, permissions: perms, accessible_pages: pages, data });
       return data;
     },
     onSuccess: () => {
