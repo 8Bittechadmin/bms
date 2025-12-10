@@ -10,19 +10,35 @@ const Landing = () => {
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
       <nav className="bg-white border-b border-gray-200">
-  <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+  <div className="container mx-auto px-4 py-3 flex items-center justify-between">
     
-    <Logo size="md" />
+    <Logo size="sm" />
 
-    <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar">
-      <Button variant="ghost" asChild className="whitespace-nowrap">
+    <div className="flex items-center gap-2">
+      <Button 
+        variant="ghost" 
+        asChild 
+        className="px-2 text-sm"
+      >
         <a href="#features">Features</a>
       </Button>
-      <Button variant="ghost" asChild className="whitespace-nowrap">
+
+      <Button 
+        variant="ghost" 
+        asChild 
+        className="px-2 text-sm"
+      >
         <a href="#about">About</a>
       </Button>
-      <Button variant="ghost" asChild className="whitespace-nowrap">
-        <a href="https://techsreni.com" target="_blank">Contact</a>
+
+      <Button 
+        variant="ghost" 
+        asChild 
+        className="px-2 text-sm"
+      >
+        <a href="https://techsreni.com" target="_blank">
+          Contact
+        </a>
       </Button>
     </div>
 
