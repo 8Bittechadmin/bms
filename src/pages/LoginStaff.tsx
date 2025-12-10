@@ -6,20 +6,61 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AuthLayout from '@/components/AuthLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 
 const LoginStaff = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // This would typically validate credentials against a backend
-    // For now, we'll just simulate a successful login
-    toast({
-      title: "Login successful",
-      description: "Welcome to the staff dashboard.",
-    });
-    navigate('/dashboard');
+    setIsLoading(true);
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, username, role, password')
+          .eq('username', username)
+          .eq('password', password)
+          .single();
+
+        if (error || !data) {
+          toast({
+            title: 'Login failed',
+            description: 'Invalid username or password.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        localStorage.setItem('currentUser', JSON.stringify({
+          id: data.id,
+          username: data.username,
+          role: data.role,
+        }));
+
+        toast({
+          title: 'Login successful',
+          description: `Welcome back, ${data.username}!`,
+        });
+        navigate('/dashboard');
+      } catch (err: any) {
+        console.error('[LoginStaff] Error:', err);
+        toast({
+          title: 'Error',
+          description: 'An error occurred during login. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   };
 
   return (
@@ -29,8 +70,16 @@ const LoginStaff = () => {
     >
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="staff@example.com" required />
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            name="username"
+            type="text"
+            placeholder="jane_doe"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
         </div>
         
         <div className="space-y-2">
@@ -40,12 +89,19 @@ const LoginStaff = () => {
               Forgot password?
             </a>
           </div>
-          <Input id="password" name="password" type="password" required />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </div>
         
         <div>
-          <Button type="submit" className="w-full">
-            Sign in
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
         </div>
         
