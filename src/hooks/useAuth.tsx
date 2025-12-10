@@ -116,6 +116,8 @@ export default function useAuth() {
     if (!currentUser) return true; // if not logged in, allow (app may have public flows)
     // admin gets full access
     if (currentUser.role && String(currentUser.role).toLowerCase() === 'admin') return true;
+    // While loading role metadata, allow access (will be checked when metadata loads)
+    if (loading) return true;
     if (!roleMeta) return false;
     return Array.isArray(roleMeta.accessible_pages) && roleMeta.accessible_pages.includes(pageKey);
   };

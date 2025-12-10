@@ -8,13 +8,17 @@ interface Props {
 }
 
 const RequirePageAccess: React.FC<Props> = ({ pageKey, children }) => {
-  const { currentUser, loading, hasPage } = useAuth();
+  const { currentUser, loading, hasPage, roleMeta } = useAuth();
 
-  if (loading) return null; // or a small spinner if desired
-
-  // if not logged in, allow (some apps may permit public routes)
+  // If not logged in, allow (some apps may permit public routes)
   if (!currentUser) return <>{children}</>;
 
+  // If still loading role metadata for a logged-in user, wait
+  if (loading || (currentUser && !roleMeta)) {
+    return null; // or a small spinner if desired
+  }
+
+  // After role metadata is loaded, check access
   if (!hasPage(pageKey)) {
     return <Navigate to="/not-found" replace />;
   }
