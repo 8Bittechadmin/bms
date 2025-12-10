@@ -90,7 +90,8 @@ const VenueForm: React.FC<VenueFormProps> = ({
 
   return (
     <Form {...form}>
-      <div className="absolute right-4 top-4">
+      <div className="flex justify-between items-center mb-4 px-1">
+        <h3 className="text-lg font-semibold">Venue Details</h3>
         <DialogClose className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center">
           <X className="h-4 w-4" />
         </DialogClose>

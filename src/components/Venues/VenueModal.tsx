@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import VenueForm from './VenueForm';
 import { VenueFormValues } from './VenueFormSchema';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 
 interface VenueModalProps {
   open: boolean;
@@ -29,7 +29,7 @@ export const VenueModal: React.FC<VenueModalProps> = ({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const queryClient = useQueryClient();
 
-  const venueSubmitMutation = React.useMutation({
+  const venueSubmitMutation = useMutation({
     mutationFn: async (values: VenueFormValues) => {
       // Check if venue has active bookings to determine availability
       let availability = values.availability;
