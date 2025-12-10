@@ -81,41 +81,44 @@ const EventPlanning = () => {
       />
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Tabs defaultValue="upcoming" className="flex-1">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
-                <TabsTrigger value="past">Past Events</TabsTrigger>
-                <TabsTrigger value="all">All Events</TabsTrigger>
-              </TabsList>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleSelectionMode}
-                >
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                  {isSelectionMode ? 'Cancel Selection' : 'Select Events'}
-                </Button>
-                
+        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
+          <Tabs defaultValue="upcoming" className="flex-1 w-full">
+            <div className="w-full mb-4">
+              <div className="overflow-x-auto no-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
+                <TabsList className="inline-flex gap-2">
+                  <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
+                  <TabsTrigger value="past">Past Events</TabsTrigger>
+                  <TabsTrigger value="all">All Events</TabsTrigger>
+                </TabsList>
+              </div>
+            </div>
+
+            <div className="flex gap-2 flex-wrap sm:flex-nowrap mt-2 sm:mt-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSelectionMode}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" />
+                {isSelectionMode ? 'Cancel' : 'Select'}
+              </Button>
+
+              <div className="flex items-center">
                 <BookingExport 
                   bookings={events}
                   selectedBookingIds={selectedBookingIds} 
                   isSelectionMode={isSelectionMode}
                 />
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setIsVendorModalOpen(true)}
-                >
-                  Add Vendor
-                </Button>
               </div>
-            </div>
 
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsVendorModalOpen(true)}
+              >
+                Add Vendor
+              </Button>
+            </div>
             <TabsContent value="upcoming" className="m-0">
               {isLoading ? (
                 <div className="flex justify-center items-center h-64">
