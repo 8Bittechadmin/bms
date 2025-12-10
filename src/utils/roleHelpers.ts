@@ -29,7 +29,19 @@ export const getAccessiblePages = (pages: any): string[] => {
     if (Array.isArray(pages)) {
       return pages;
     } else if (typeof pages === 'string') {
-      return pages.split(',').map((s: string) => s.trim()).filter(Boolean);
+      // Handle Postgres array string format: {a,b,c}
+      const trimmed = pages.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        const inner = trimmed.slice(1, -1);
+        return inner
+          .split(',')
+          .map((s: string) => s.trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1'))
+          .filter(Boolean);
+      }
+      return pages
+        .split(',')
+        .map((s: string) => s.trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1'))
+        .filter(Boolean);
     }
   } catch {
     return [];
