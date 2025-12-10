@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Calendar, List, Plus, Filter, Search, X, Eye, Edit, Download, FileText, Printer, Copy, Share2, CheckCircle2 } from 'lucide-react';
+import { exportBookingsToPdf } from '@/lib/exportUtils';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -210,7 +211,13 @@ const Bookings: React.FC = () => {
 
   // Export as PDF (placeholder)
   const handleExportPDF = () => {
-    alert('Export as PDF is not implemented yet.');
+    if (!filteredBookings.length) return;
+    try {
+      exportBookingsToPdf(filteredBookings, `bookings-${new Date().toISOString()}`);
+    } catch (err) {
+      console.error('PDF export failed', err);
+      alert('Export as PDF failed. Check console for details.');
+    }
   };
 
   // Print (placeholder)

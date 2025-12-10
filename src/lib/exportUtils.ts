@@ -48,6 +48,70 @@ export const exportJsonToPdf = (data: any[], filename = 'export') => {
   doc.save(`${filename}.pdf`);
 };
 
+export const exportBookingsToPdf = (bookings: any[], filename = 'bookings') => {
+  if (!bookings || bookings.length === 0) return;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const title = 'Bookings Report';
+  const generatedAt = new Date().toLocaleString();
+
+  doc.setFontSize(14);
+  doc.text(title, 40, 40);
+  doc.setFontSize(10);
+  doc.text(`Generated: ${generatedAt}`, 40, 58);
+
+  const columns = [
+    { header: 'ID', dataKey: 'id' },
+    { header: 'Client', dataKey: 'client' },
+    { header: 'Event Name', dataKey: 'event_name' },
+    { header: 'Event Type', dataKey: 'event_type' },
+    { header: 'Venue', dataKey: 'venue' },
+    { header: 'Start Date', dataKey: 'start_date' },
+    { header: 'End Date', dataKey: 'end_date' },
+    { header: 'Guests', dataKey: 'guest_count' },
+    { header: 'Total', dataKey: 'total_amount' },
+    { header: 'Deposit', dataKey: 'deposit_amount' },
+    { header: 'Deposit Paid', dataKey: 'deposit_paid' },
+    { header: 'Status', dataKey: 'status' },
+    { header: 'Notes', dataKey: 'notes' }
+  ];
+
+  const body = bookings.map(b => ({
+    id: String(b.id).substring(0, 12),
+    client: b.client?.name || '',
+    event_name: b.event_name || '',
+    event_type: b.event_type || '',
+    venue: b.venue?.name || '',
+    start_date: b.start_date ? new Date(b.start_date).toLocaleString() : '',
+    end_date: b.end_date ? new Date(b.end_date).toLocaleString() : '',
+    guest_count: b.guest_count ?? '',
+    total_amount: b.total_amount != null ? String(b.total_amount) : '',
+    deposit_amount: b.deposit_amount != null ? String(b.deposit_amount) : '',
+    deposit_paid: b.deposit_paid ? 'Yes' : 'No',
+    status: b.status || '',
+    notes: b.notes ? String(b.notes) : ''
+  }));
+
+  // @ts-ignore
+  doc.autoTable({
+    columns,
+    body,
+    startY: 80,
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [40, 116, 240] },
+    columnStyles: {
+      notes: { cellWidth: 160 }
+    },
+    didDrawPage: (dataArg: any) => {
+      // footer with page number
+      const page = doc.getNumberOfPages();
+      doc.setFontSize(9);
+      doc.text(`Page ${page}`, doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 20);
+    }
+  });
+
+  doc.save(`${filename}.pdf`);
+};
+
 export const parseCsvFile = (file: File): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
