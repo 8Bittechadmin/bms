@@ -22,6 +22,7 @@ import ClientManagement from "./pages/ClientManagement";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import EditBooking from "./pages/EditBooking";
+import RequirePageAccess from './components/RequirePageAccess';
 
 const queryClient = new QueryClient();
 
@@ -36,18 +37,19 @@ const App = () => (
           <Route path="/landing" element={<Landing />} key="landing" />
           <Route path="/login-admin" element={<LoginAdmin />} key="login-admin" />
           <Route path="/login-staff" element={<LoginStaff />} key="login-staff" />
-          <Route path="/dashboard" element={<Dashboard />} key="dashboard" />
-          <Route path="/bookings" element={<Bookings />} key="bookings" />
-          <Route path="/bookings/new" element={<BookingForm />} key="new-booking" />
+          <Route path="/dashboard" element={<RequirePageAccess pageKey="dashboard"><Dashboard /></RequirePageAccess>} key="dashboard" />
+          <Route path="/bookings" element={<RequirePageAccess pageKey="bookings"><Bookings /></RequirePageAccess>} key="bookings" />
+          <Route path="/bookings/new" element={<RequirePageAccess pageKey="bookings"><BookingForm /></RequirePageAccess>} key="new-booking" />
           <Route path="/inventory" element={<Inventory />} key="inventory" />
-          <Route path="/venues" element={<Venues />} key="venues" />
-          <Route path="/event-planning" element={<EventPlanning />} key="event-planning" />
-          <Route path="/catering" element={<Catering />} key="catering" />
-          <Route path="/staff" element={<Staff />} key="staff" />
-          <Route path="/billing" element={<Billing />} key="billing" />
-          <Route path="/clients" element={<ClientManagement />} key="clients" />
-          <Route path="/reports" element={<Reports />} key="reports" />
-          <Route path="/settings" element={<Settings />} key="settings" />
+          <Route path="/inventory" element={<RequirePageAccess pageKey="inventory"><Inventory /></RequirePageAccess>} key="inventory" />
+          <Route path="/venues" element={<RequirePageAccess pageKey="venues"><Venues /></RequirePageAccess>} key="venues" />
+          <Route path="/event-planning" element={<RequirePageAccess pageKey="event_planning"><EventPlanning /></RequirePageAccess>} key="event-planning" />
+          <Route path="/catering" element={<RequirePageAccess pageKey="catering"><Catering /></RequirePageAccess>} key="catering" />
+          <Route path="/staff" element={<RequirePageAccess pageKey="staff"><Staff /></RequirePageAccess>} key="staff" />
+          <Route path="/billing" element={<RequirePageAccess pageKey="billing"><Billing /></RequirePageAccess>} key="billing" />
+          <Route path="/clients" element={<RequirePageAccess pageKey="clients"><ClientManagement /></RequirePageAccess>} key="clients" />
+          <Route path="/reports" element={<RequirePageAccess pageKey="reports"><Reports /></RequirePageAccess>} key="reports" />
+          <Route path="/settings" element={<RequirePageAccess pageKey="settings"><Settings /></RequirePageAccess>} key="settings" />
           <Route path="/bookings/edit/:id" element={<EditBooking />} key="edit-booking" />
           <Route path="*" element={<NotFound />} key="not-found" />
         </Routes>
