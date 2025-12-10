@@ -39,17 +39,60 @@ const LoginAdmin = () => {
           return;
         }
 
-        localStorage.setItem('currentUser', JSON.stringify({
-          id: data.id,
-          username: data.username,
-          role: data.role,
-        }));
+            // Store user info in localStorage or session
+            localStorage.setItem('currentUser', JSON.stringify({
+              id: data.id,
+              username: data.username,
+              role: data.role,
+            }));
 
-        toast({
-          title: 'Login successful',
-          description: `Welcome back, ${data.username}!`,
-        });
-        navigate('/dashboard');
+            // Determine first allowed page and navigate there (so users without dashboard access won't be redirected to not-found)
+            try {
+              const { data: roleData, error: roleError } = await supabase
+                .from('user_roles')
+                .select('accessible_pages')
+                .ilike('name', data.role)
+                .single();
+
+              let target = '/dashboard';
+              if (!roleError && roleData) {
+                const pages = Array.isArray(roleData.accessible_pages)
+                  ? roleData.accessible_pages
+                  : (typeof roleData.accessible_pages === 'string'
+                    ? roleData.accessible_pages.split(',').map((s: string) => s.trim()).filter(Boolean)
+                    : []);
+
+                if (pages.length > 0) {
+                  const map: Record<string, string> = {
+                    dashboard: '/dashboard',
+                    bookings: '/bookings',
+                    inventory: '/inventory',
+                    venues: '/venues',
+                    event_planning: '/event-planning',
+                    catering: '/catering',
+                    staff: '/staff',
+                    billing: '/billing',
+                    clients: '/clients',
+                    reports: '/reports',
+                    settings: '/settings',
+                  };
+                  target = map[pages[0]] ?? '/dashboard';
+                }
+              }
+
+              toast({
+                title: 'Login successful',
+                description: `Welcome back, ${data.username}!`,
+              });
+              navigate(target);
+            } catch (err) {
+              console.error('[LoginAdmin] role lookup error', err);
+              toast({
+                title: 'Login successful',
+                description: `Welcome back, ${data.username}!`,
+              });
+              navigate('/dashboard');
+            }
       } catch (err: any) {
         console.error('[LoginAdmin] Error:', err);
         toast({
