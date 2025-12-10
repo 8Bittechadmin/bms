@@ -14,6 +14,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Settings as SettingsIcon, Users, Shield, Bell, Database } from 'lucide-react';
+import AddUserModal from '@/components/Settings/AddUserModal';
+import AddRoleModal from '@/components/Settings/AddRoleModal';
+import EditUserModal from '@/components/Settings/EditUserModal';
+import EditRoleModal from '@/components/Settings/EditRoleModal';
 
 // Define local interfaces instead of importing from client
 interface SystemSettings {
@@ -80,24 +84,17 @@ const SettingsPage: React.FC = () => {
     }
   });
 
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isAddRoleOpen, setIsAddRoleOpen] = useState(false);
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: number; username: string; role: string } | null>(null);
+  const [selectedRole, setSelectedRole] = useState<{ id: string; name: string; permissions?: any; accessible_pages?: string[] } | null>(null);
+
   const handleSaveSettings = async () => {
     toast({
       title: "Settings Saved",
       description: "Your settings have been updated successfully.",
-    });
-  };
-
-  const handleCreateRole = async () => {
-    toast({
-      title: "Feature Coming Soon",
-      description: "Role creation functionality will be available soon.",
-    });
-  };
-
-  const handleCreateUser = async () => {
-    toast({
-      title: "Feature Coming Soon",
-      description: "User creation functionality will be available soon.",
     });
   };
 
@@ -170,7 +167,7 @@ const SettingsPage: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>User Management</CardTitle>
-              <Button onClick={handleCreateUser}>
+              <Button onClick={() => setIsAddUserOpen(true)}>
                 <Users size={16} className="mr-2" />
                 Add User
               </Button>
@@ -194,7 +191,7 @@ const SettingsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">Edit</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setSelectedUser(user); setIsEditUserOpen(true); }}>Edit</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -208,7 +205,7 @@ const SettingsPage: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Role Management</CardTitle>
-              <Button onClick={handleCreateRole}>
+              <Button onClick={() => setIsAddRoleOpen(true)}>
                 <Shield size={16} className="mr-2" />
                 Add Role
               </Button>
@@ -238,7 +235,7 @@ const SettingsPage: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">Edit</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setSelectedRole(role); setIsEditRoleOpen(true); }}>Edit</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -304,6 +301,10 @@ const SettingsPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      <AddUserModal open={isAddUserOpen} onOpenChange={setIsAddUserOpen} />
+      <AddRoleModal open={isAddRoleOpen} onOpenChange={setIsAddRoleOpen} />
+      <EditUserModal open={isEditUserOpen} onOpenChange={(open) => { if (!open) setSelectedUser(null); setIsEditUserOpen(open); }} user={selectedUser} />
+      <EditRoleModal open={isEditRoleOpen} onOpenChange={(open) => { if (!open) setSelectedRole(null); setIsEditRoleOpen(open); }} role={selectedRole} />
     </AppLayout>
   );
 };
