@@ -14,6 +14,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Settings as SettingsIcon, Users, Shield, Bell, Database } from 'lucide-react';
+import { getPermissionCount, getAccessiblePagesCount } from '@/utils/roleHelpers';
 import AddUserModal from '@/components/Settings/AddUserModal';
 import AddRoleModal from '@/components/Settings/AddRoleModal';
 import EditUserModal from '@/components/Settings/EditUserModal';
@@ -226,12 +227,12 @@ const SettingsPage: React.FC = () => {
                       <TableCell>{role.name}</TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {role.permissions ? Object.keys(role.permissions).length : 0} permissions
+                          {getPermissionCount(role.permissions)} permissions
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {role.accessible_pages?.length || 0} pages
+                          {getAccessiblePagesCount(role.accessible_pages)} pages
                         </Badge>
                       </TableCell>
                       <TableCell>
