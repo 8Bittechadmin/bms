@@ -29,10 +29,8 @@ export const VenueModal: React.FC<VenueModalProps> = ({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const queryClient = useQueryClient();
 
-  const handleSubmit = async (values: VenueFormValues) => {
-    setIsSubmitting(true);
-    
-    try {
+  const venueSubmitMutation = React.useMutation({
+    mutationFn: async (values: VenueFormValues) => {
       // Check if venue has active bookings to determine availability
       let availability = values.availability;
       
@@ -51,10 +49,6 @@ export const VenueModal: React.FC<VenueModalProps> = ({
           if (activeBookings && activeBookings.length > 0) {
             // If there are active bookings, override availability
             availability = 'booked';
-            toast({
-              title: "Availability Adjusted",
-              description: "This venue has active bookings, so it's been marked as 'Booked'.",
-            });
           }
         }
         
@@ -70,7 +64,7 @@ export const VenueModal: React.FC<VenueModalProps> = ({
             deposit_amount: values.deposit_amount,
             full_day_amount: values.full_day_amount,
             half_day_amount: values.half_day_amount,
-            hourly_rate: values.total_amount || 0, // Use total_amount as hourly_rate fallback
+            hourly_rate: values.total_amount || 0,
             location: values.location,
             availability: availability,
             images: values.images || [],
@@ -81,12 +75,6 @@ export const VenueModal: React.FC<VenueModalProps> = ({
         
         if (error) throw error;
         
-        toast({
-          title: 'Venue Updated',
-          description: `${values.name} has been updated successfully.`,
-        });
-        
-        // Also invalidate the specific venue query to update the details dialog
         queryClient.invalidateQueries({ queryKey: ['venue', venue.id] });
       } else {
         // Insert new venue
@@ -101,7 +89,7 @@ export const VenueModal: React.FC<VenueModalProps> = ({
             deposit_amount: values.deposit_amount,
             full_day_amount: values.full_day_amount,
             half_day_amount: values.half_day_amount,
-            hourly_rate: values.total_amount || 0, // Use total_amount as hourly_rate fallback
+            hourly_rate: values.total_amount || 0,
             location: values.location,
             availability: availability,
             images: values.images || [],
@@ -109,24 +97,86 @@ export const VenueModal: React.FC<VenueModalProps> = ({
           }) as any;
         
         if (error) throw error;
+      }
+      
+      return { isEditing, availability };
+    },
+    onMutate: async (values: VenueFormValues) => {
+      // Cancel outgoing dashboardStats queries
+      await queryClient.cancelQueries({ queryKey: ['dashboardStats'] });
+      
+      // Get current dashboardStats
+      const previousStats = queryClient.getQueryData(['dashboardStats']) as any;
+      
+      if (previousStats) {
+        let activeVenuesDiff = 0;
         
+        if (isEditing && venue) {
+          // Check if availability status changed to affect active_venues count
+          const oldIsAvailable = venue.availability === 'available';
+          const newIsAvailable = values.availability === 'available';
+          
+          if (oldIsAvailable && !newIsAvailable) {
+            activeVenuesDiff = -1; // Was available, now not
+          } else if (!oldIsAvailable && newIsAvailable) {
+            activeVenuesDiff = 1; // Wasn't available, now is
+          }
+        } else {
+          // New venue: if it's available, increment active venues
+          if (values.availability === 'available') {
+            activeVenuesDiff = 1;
+          }
+        }
+        
+        // Optimistically update stats
+        const updatedStats = {
+          ...previousStats,
+          active_venues: Math.max(0, (previousStats.active_venues || 0) + activeVenuesDiff),
+        };
+        
+        queryClient.setQueryData(['dashboardStats'], updatedStats);
+      }
+      
+      return { previousStats };
+    },
+    onSuccess: (result) => {
+      const action = result.isEditing ? 'updated' : 'added';
+      const title = result.isEditing ? 'Venue Updated' : 'Venue Added';
+      
+      if (result.isEditing && result.availability === 'booked') {
         toast({
-          title: 'Venue Added',
-          description: `${values.name} has been added successfully.`,
+          title: "Availability Adjusted",
+          description: "This venue has active bookings, so it's been marked as 'Booked'.",
         });
       }
       
-      // Invalidate the venues query to refetch data
-      queryClient.invalidateQueries({ queryKey: ['venues'] });
+      toast({
+        title,
+        description: `The venue has been successfully ${action}.`,
+      });
       
+      queryClient.invalidateQueries({ queryKey: ['venues'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       onOpenChange(false);
-    } catch (error: any) {
+    },
+    onError: (error: any, variables, context: any) => {
+      // Restore previous stats on error
+      if (context?.previousStats) {
+        queryClient.setQueryData(['dashboardStats'], context.previousStats);
+      }
       console.error('Error saving venue:', error);
       toast({
         title: 'Error',
         description: error.message || 'There was a problem saving the venue.',
         variant: 'destructive',
       });
+    },
+  });
+
+  const handleSubmit = async (values: VenueFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await venueSubmitMutation.mutateAsync(values);
     } finally {
       setIsSubmitting(false);
     }

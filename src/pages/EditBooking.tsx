@@ -285,6 +285,62 @@ const EditBooking = () => {
       
       return data;
     },
+    onMutate: async (values: BookingFormValues) => {
+      // Cancel outgoing dashboardStats queries
+      await queryClient.cancelQueries({ queryKey: ['dashboardStats'] });
+      
+      // Get current dashboardStats and old booking data
+      const previousStats = queryClient.getQueryData(['dashboardStats']) as any;
+      const oldData = data;
+      
+      if (previousStats && oldData) {
+        // Calculate if old booking was today and this month
+        const oldDate = new Date(oldData.start_date);
+        const oldDateOnly = new Date(oldDate.getFullYear(), oldDate.getMonth(), oldDate.getDate());
+        const now = new Date();
+        const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const oldIsToday = oldDateOnly.getTime() === todayOnly.getTime();
+        const oldIsThisMonth = oldDate.getMonth() === now.getMonth() && 
+                              oldDate.getFullYear() === now.getFullYear();
+        
+        // Calculate if new booking is today and this month
+        const newDate = new Date(values.start_date);
+        const newDateOnly = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+        const newIsToday = newDateOnly.getTime() === todayOnly.getTime();
+        const newIsThisMonth = newDate.getMonth() === now.getMonth() && 
+                              newDate.getFullYear() === now.getFullYear();
+        
+        // Calculate guest count difference
+        const guestDifference = (values.guest_count || 0) - (oldData.guest_count || 0);
+        
+        // Calculate bookings this month difference
+        let bookingsMonthDiff = 0;
+        if (newIsThisMonth && !oldIsThisMonth) bookingsMonthDiff = 1; // Moved into this month
+        if (!newIsThisMonth && oldIsThisMonth) bookingsMonthDiff = -1; // Moved out of this month
+        
+        // Calculate guests today difference
+        let guestsTodayDiff = 0;
+        if (newIsToday && oldIsToday) {
+          guestsTodayDiff = guestDifference; // Same day, just add difference
+        } else if (newIsToday && !oldIsToday) {
+          guestsTodayDiff = values.guest_count || 0; // Moved to today
+        } else if (!newIsToday && oldIsToday) {
+          guestsTodayDiff = -(oldData.guest_count || 0); // Moved away from today
+        }
+        
+        // Optimistically update stats
+        const updatedStats = {
+          ...previousStats,
+          bookings_this_month: Math.max(0, (previousStats.bookings_this_month || 0) + bookingsMonthDiff),
+          total_guests_today: Math.max(0, (previousStats.total_guests_today || 0) + guestsTodayDiff),
+        };
+        
+        queryClient.setQueryData(['dashboardStats'], updatedStats);
+      }
+      
+      return { previousStats };
+    },
     onSuccess: () => {
       toast({
         title: 'Booking updated',
@@ -292,9 +348,14 @@ const EditBooking = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['booking-with-wedding', id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       navigate('/bookings');
     },
-    onError: (error) => {
+    onError: (error, variables, context: any) => {
+      // Restore previous stats on error
+      if (context?.previousStats) {
+        queryClient.setQueryData(['dashboardStats'], context.previousStats);
+      }
       toast({
         title: 'Error',
         description: `Failed to update booking: ${error.message}`,
@@ -364,15 +425,51 @@ const EditBooking = () => {
         throw error;
       }
     },
+    onMutate: async () => {
+      // Cancel outgoing dashboardStats queries
+      await queryClient.cancelQueries({ queryKey: ['dashboardStats'] });
+      
+      // Get current dashboardStats and booking data
+      const previousStats = queryClient.getQueryData(['dashboardStats']) as any;
+      const oldData = data;
+      
+      if (previousStats && oldData) {
+        // Check if booking was today and this month
+        const bookingDate = new Date(oldData.start_date);
+        const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+        const now = new Date();
+        const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const wasToday = bookingDateOnly.getTime() === todayOnly.getTime();
+        const wasThisMonth = bookingDate.getMonth() === now.getMonth() && 
+                            bookingDate.getFullYear() === now.getFullYear();
+        
+        // Optimistically update stats
+        const updatedStats = {
+          ...previousStats,
+          bookings_this_month: wasThisMonth ? Math.max(0, (previousStats.bookings_this_month || 0) - 1) : previousStats.bookings_this_month,
+          total_guests_today: wasToday ? Math.max(0, (previousStats.total_guests_today || 0) - (oldData.guest_count || 0)) : previousStats.total_guests_today,
+        };
+        
+        queryClient.setQueryData(['dashboardStats'], updatedStats);
+      }
+      
+      return { previousStats };
+    },
     onSuccess: () => {
       toast({
         title: 'Booking deleted',
         description: 'The booking has been successfully deleted.',
       });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       navigate('/bookings');
     },
-    onError: (error) => {
+    onError: (error, variables, context: any) => {
+      // Restore previous stats on error
+      if (context?.previousStats) {
+        queryClient.setQueryData(['dashboardStats'], context.previousStats);
+      }
       toast({
         title: 'Error',
         description: `Failed to delete booking: ${error.message}`,

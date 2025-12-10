@@ -44,15 +44,51 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
       if (error) throw error;
       return data;
     },
+    onMutate: async (values: any) => {
+      // Cancel any outgoing queries for dashboardStats
+      await queryClient.cancelQueries({ queryKey: ['dashboardStats'] });
+      
+      // Get current dashboardStats
+      const previousStats = queryClient.getQueryData(['dashboardStats']) as any;
+      
+      if (previousStats) {
+        // Check if event is this month
+        const eventDate = new Date(values.start_date);
+        const now = new Date();
+        const isThisMonth = eventDate.getMonth() === now.getMonth() && 
+                           eventDate.getFullYear() === now.getFullYear();
+        
+        // Check if event is today
+        const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+        const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const isToday = eventDateOnly.getTime() === todayOnly.getTime();
+        
+        // Optimistically update stats
+        const updatedStats = {
+          ...previousStats,
+          bookings_this_month: isThisMonth ? (previousStats.bookings_this_month || 0) + 1 : previousStats.bookings_this_month,
+          total_guests_today: isToday ? (previousStats.total_guests_today || 0) + (values.guest_count || 0) : previousStats.total_guests_today,
+        };
+        
+        queryClient.setQueryData(['dashboardStats'], updatedStats);
+      }
+      
+      return { previousStats };
+    },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Event has been created successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context: any) => {
+      // Restore previous stats on error
+      if (context?.previousStats) {
+        queryClient.setQueryData(['dashboardStats'], context.previousStats);
+      }
       toast({
         title: "Error",
         description: `Failed to create event: ${error.message}`,

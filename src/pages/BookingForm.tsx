@@ -102,15 +102,51 @@ const BookingForm = () => {
       
       return bookingData;
     },
+    onMutate: async (values: BookingFormValues) => {
+      // Cancel outgoing dashboardStats queries
+      await queryClient.cancelQueries({ queryKey: ['dashboardStats'] });
+      
+      // Get current dashboardStats
+      const previousStats = queryClient.getQueryData(['dashboardStats']) as any;
+      
+      if (previousStats) {
+        // Check if booking is this month
+        const bookingDate = new Date(values.start_date);
+        const now = new Date();
+        const isThisMonth = bookingDate.getMonth() === now.getMonth() && 
+                           bookingDate.getFullYear() === now.getFullYear();
+        
+        // Check if booking is today
+        const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+        const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const isToday = bookingDateOnly.getTime() === todayOnly.getTime();
+        
+        // Optimistically update stats
+        const updatedStats = {
+          ...previousStats,
+          bookings_this_month: isThisMonth ? (previousStats.bookings_this_month || 0) + 1 : previousStats.bookings_this_month,
+          total_guests_today: isToday ? (previousStats.total_guests_today || 0) + (values.guest_count || 0) : previousStats.total_guests_today,
+        };
+        
+        queryClient.setQueryData(['dashboardStats'], updatedStats);
+      }
+      
+      return { previousStats };
+    },
     onSuccess: () => {
       toast({
         title: 'Booking created',
         description: 'The booking has been successfully created.',
       });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       navigate('/bookings');
     },
-    onError: (error) => {
+    onError: (error, variables, context: any) => {
+      // Restore previous stats on error
+      if (context?.previousStats) {
+        queryClient.setQueryData(['dashboardStats'], context.previousStats);
+      }
       toast({
         title: 'Error',
         description: `Failed to create booking: ${error.message}`,
