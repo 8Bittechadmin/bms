@@ -48,7 +48,7 @@ const Landing = () => {
 
 
       {/* Hero Section */}
-      <section id="about" className="py-16 bg-white">
+      <section id="about" className="bg-white">
       <section className="flex-grow flex items-center bg-gradient-to-b from-cyan-50 to-white">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
