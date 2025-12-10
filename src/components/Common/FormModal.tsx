@@ -43,7 +43,7 @@ const FormModal: React.FC<FormModalProps> = ({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <div className="py-2">
+        <div className="py-2 overflow-auto max-h-[60vh] sm:max-h-[65vh]">
           {children}
         </div>
         {footer && <DialogFooter>{footer}</DialogFooter>}

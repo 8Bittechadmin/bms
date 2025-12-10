@@ -35,7 +35,14 @@ const EventPlanning = () => {
           wedding_bookings(*)
         `)
         .order('start_date', { ascending: false }) as any;
-      
+
+      // Debug: log Supabase response to help diagnose intermittent failures
+      // This will show in the browser console when the page loads.
+      // If you see permission errors or relation-not-found messages here,
+      // those are the root cause of the toast.
+      // Example: console will show { data: [...], error: null } on success.
+      console.debug('Supabase bookings response', { data, error });
+
       if (error) throw error;
       return data || [];
     },
