@@ -118,8 +118,13 @@ export default function useAuth() {
     if (currentUser.role && String(currentUser.role).toLowerCase() === 'admin') return true;
     // While loading role metadata, allow access (will be checked when metadata loads)
     if (loading) return true;
+    // If role metadata fetch failed (role doesn't exist), deny access
     if (!roleMeta) return false;
-    return Array.isArray(roleMeta.accessible_pages) && roleMeta.accessible_pages.includes(pageKey);
+    // If accessible_pages is empty/null, allow all pages (role exists but unrestricted)
+    const pages = roleMeta.accessible_pages || [];
+    if (pages.length === 0) return true;
+    // Otherwise check if page is in the allowed list
+    return pages.includes(pageKey);
   };
 
   const hasPermission = (pageKey: string, permission: string) => {
