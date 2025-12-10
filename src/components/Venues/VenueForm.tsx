@@ -6,8 +6,8 @@ import { VenueFormSchema, VenueFormValues, AVAILABILITY_OPTIONS } from './VenueF
 import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { InputField, SelectField, TextareaField } from '@/components/Common/FormFields';
-import { DialogFooter } from '@/components/ui/dialog';
-import { Upload, ImageIcon, Trash, Plus } from 'lucide-react';
+import { DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Upload, ImageIcon, Trash, Plus, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -90,6 +90,11 @@ const VenueForm: React.FC<VenueFormProps> = ({
 
   return (
     <Form {...form}>
+      <div className="absolute right-4 top-4">
+        <DialogClose className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center">
+          <X className="h-4 w-4" />
+        </DialogClose>
+      </div>
       <ScrollArea className="h-[70vh] pr-4">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           <InputField

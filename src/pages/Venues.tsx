@@ -191,7 +191,7 @@ const Venues: React.FC = () => {
                   </div>
                   
                   {/* Display pricing information */}
-                  <div className="border-t pt-2 mb-4">
+                  <div className="border-t pt-2">
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center gap-1">
                         <Banknote className="h-4 w-4 text-green-600" />
@@ -202,45 +202,6 @@ const Venues: React.FC = () => {
                         <span className="font-medium">Half Day: {formatCurrency(venue.half_day_amount)}</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Upcoming Bookings Section */}
-                  <div className="border-t pt-3">
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      Upcoming Bookings
-                    </h4>
-                    {venueBookings.length > 0 ? (
-                      <div className="space-y-2">
-                        {venueBookings.map((booking) => (
-                          <div key={booking.id} className="p-2 bg-muted/30 rounded-md">
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="text-xs font-medium">{booking.event_name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {booking.event_type}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                <span>{formatDate(booking.start_date)}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                <span>{getClientName(booking)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {bookings.filter(b => b.venue_id === venue.id).length > 3 && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            +{bookings.filter(b => b.venue_id === venue.id).length - 3} more bookings
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No upcoming bookings</p>
-                    )}
                   </div>
                 </CardContent>
                 <CardFooter className="pt-0">
