@@ -1,6 +1,6 @@
 // Utilities for exporting data to XLSX and PDF and parsing CSV/JSON imports
 import { saveAs } from 'file-saver';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
