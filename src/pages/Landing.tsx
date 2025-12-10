@@ -10,23 +10,28 @@ const Landing = () => {
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
       <nav className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Logo size="md" />
-          <div className="space-x-4">
-            <Button variant="ghost" asChild>
-              <a href="#features">Features</a>
-            </Button>
-            <Button variant="ghost" asChild>
-              <a href="#about">About</a>
-            </Button>
-            <Button variant="ghost" asChild>
-              <a href="#contact">Contact</a>
-            </Button>
-          </div>
-        </div>
-      </nav>
+  <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    
+    <Logo size="md" />
+
+    <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar">
+      <Button variant="ghost" asChild className="whitespace-nowrap">
+        <a href="#features">Features</a>
+      </Button>
+      <Button variant="ghost" asChild className="whitespace-nowrap">
+        <a href="#about">About</a>
+      </Button>
+      <Button variant="ghost" asChild className="whitespace-nowrap">
+        <a href="https://techsreni.com" target="_blank">Contact</a>
+      </Button>
+    </div>
+
+  </div>
+</nav>
+
 
       {/* Hero Section */}
+      <section id="about" className="py-16 bg-white">
       <section className="flex-grow flex items-center bg-gradient-to-b from-cyan-50 to-white">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -97,6 +102,7 @@ const Landing = () => {
             </div>
           </div>
         </div>
+      </section>
       </section>
       
       {/* Features Section */}
