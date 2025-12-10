@@ -43,8 +43,8 @@ export default function useAuth() {
 
         const { data, error } = await supabase
           .from('user_roles')
-          .select('permissions, accessible_pages')
-          .eq('name', roleName)
+           .select('name, permissions, accessible_pages')
+           .ilike('name', roleName)
           .single();
 
         if (error) {
@@ -53,6 +53,14 @@ export default function useAuth() {
           setLoading(false);
           return;
         }
+          console.log('[useAuth] Fetching role:', roleName, '- Found:', !!data);
+
+          if (!data) {
+            console.warn('[useAuth] No data for role:', roleName);
+            if (mounted) setRoleMeta(null);
+            setLoading(false);
+            return;
+          }
 
         // Normalize accessible_pages: DB may store as text[] or comma-separated string
         let pages: string[] = [];
@@ -80,6 +88,7 @@ export default function useAuth() {
     if (currentUser?.role) {
       fetchRole(currentUser.role);
     }
+    console.debug('[useAuth] useEffect triggered, currentUser.role:', currentUser?.role);
 
     return () => {
       mounted = false;
@@ -95,7 +104,7 @@ export default function useAuth() {
       const { data } = await supabase
         .from('user_roles')
         .select('permissions, accessible_pages')
-        .eq('name', u.role)
+        .ilike('name', u.role)
         .single();
       let pages: string[] = [];
       if (Array.isArray(data?.accessible_pages)) {
