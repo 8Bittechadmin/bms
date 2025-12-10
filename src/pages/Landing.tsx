@@ -15,12 +15,13 @@ const Landing = () => {
     <Logo size="sm" />
 
     <div className="flex items-center gap-2">
-      <Button 
+
+    <Button 
         variant="ghost" 
         asChild 
         className="px-2 text-sm"
       >
-        <a href="#features">Features</a>
+        <a href="#about">About</a>
       </Button>
 
       <Button 
@@ -28,7 +29,7 @@ const Landing = () => {
         asChild 
         className="px-2 text-sm"
       >
-        <a href="#about">About</a>
+        <a href="#features">Features</a>
       </Button>
 
       <Button 
