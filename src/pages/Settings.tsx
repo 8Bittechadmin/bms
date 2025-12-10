@@ -109,24 +109,24 @@ const SettingsPage: React.FC = () => {
       />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general" className="flex items-center gap-2">
+        <TabsList className="flex w-full gap-2 overflow-x-auto md:grid md:grid-cols-5">
+          <TabsTrigger value="general" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-md">
             <SettingsIcon size={16} />
             General
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
+          <TabsTrigger value="users" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-md">
             <Users size={16} />
             Users
           </TabsTrigger>
-          <TabsTrigger value="roles" className="flex items-center gap-2">
+          <TabsTrigger value="roles" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-md">
             <Shield size={16} />
             Roles
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger value="notifications" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-md">
             <Bell size={16} />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-2">
+          <TabsTrigger value="data" className="flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-md">
             <Database size={16} />
             Data
           </TabsTrigger>
