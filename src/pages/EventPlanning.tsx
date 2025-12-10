@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import PageHeader from '@/components/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,14 +41,16 @@ const EventPlanning = () => {
     },
   });
 
-  if (error) {
-    console.error('Error loading events:', error);
-    toast({
-      title: 'Error',
-      description: 'Failed to load events. Please try again.',
-      variant: 'destructive',
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      console.error('Error loading events:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to load events. ${error.message || 'Please try again.'}`,
+        variant: 'destructive',
+      });
+    }
+  }, [error]);
 
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
