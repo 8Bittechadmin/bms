@@ -137,7 +137,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
           onSelect={setSelectedDate}
           className="
   p-3 pointer-events-auto 
-  w-[104%] -ml-1 max-w-none      /* mobile */
+  w-[104%] -ml-5 max-w-none      /* mobile */
   md:w-full md:ml-0 md:max-w-full  /* tablet & desktop */
 "
           components={{
