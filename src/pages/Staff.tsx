@@ -36,14 +36,14 @@ const mockStaffStats = {
 const Staff: React.FC = () => {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const { data: staffStats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['staffStats'],
     queryFn: async () => {
       return mockStaffStats;
     }
   });
-  
+
   const { data: staffMembers, isLoading, refetch } = useQuery({
     queryKey: ['staffMembers'],
     queryFn: async () => {
@@ -51,7 +51,7 @@ const Staff: React.FC = () => {
         .from('staff')
         .select('*')
         .order('name');
-      
+
       if (error) throw error;
       return data as StaffMember[];
     }
@@ -89,15 +89,15 @@ const Staff: React.FC = () => {
       ];
     }
   });
-  
-  const filteredStaffMembers = staffMembers?.filter(staff => 
+
+  const filteredStaffMembers = staffMembers?.filter(staff =>
     staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     staff.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
     staff.department.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
-  
+
   const getStatusColor = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'available': return 'bg-green-100 text-green-800 hover:bg-green-200';
       case 'on-duty': return 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200';
       case 'unavailable': return 'bg-red-100 text-red-800 hover:bg-red-200';
@@ -107,7 +107,7 @@ const Staff: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
   };
-  
+
   const getStatusLabel = (status: string) => {
     return status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
@@ -118,16 +118,16 @@ const Staff: React.FC = () => {
         .from('staff')
         .insert([values])
         .select();
-      
+
       if (error) throw error;
-      
+
       toast({
         title: 'Success',
         description: `${values.name} has been added to staff.`,
       });
-      
+
       refetch();
-      
+
       return data;
     } catch (error) {
       console.error('Error adding staff:', error);
@@ -139,11 +139,11 @@ const Staff: React.FC = () => {
       throw error;
     }
   };
-  
+
   return (
     <AppLayout>
-      <PageHeader 
-        title="Staff Management" 
+      <PageHeader
+        title="Staff Management"
         description="Manage staff and event assignments"
         action={{
           label: "Add Staff",
@@ -151,8 +151,8 @@ const Staff: React.FC = () => {
           onClick: () => setIsAddStaffModalOpen(true)
         }}
       />
-      
-      <div className="grid gap-6 md:grid-cols-4 mb-6">
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Staff</CardTitle>
@@ -162,15 +162,19 @@ const Staff: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">Across 5 departments</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Available Today</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{isLoadingStats ? '...' : staffStats?.available_today || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">{staffStats ? Math.round((staffStats.available_today / staffStats.total_staff) * 100) : 0}% of total staff</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {staffStats ? Math.round((staffStats.available_today / staffStats.total_staff) * 100) : 0}% of total staff
+            </p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">On Duty</CardTitle>
@@ -180,6 +184,7 @@ const Staff: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">Currently working</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Upcoming Shifts</CardTitle>
@@ -190,21 +195,34 @@ const Staff: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
+
+
       <Tabs defaultValue="directory" className="mb-6">
-        <TabsList className="mb-4 overflow-x-auto whitespace-nowrap flex gap-2">
+        <TabsList
+          className="
+    mb-4 
+    inline-flex 
+    gap-2 
+    overflow-x-auto 
+    whitespace-nowrap 
+    scrollbar-hide 
+    w-full 
+    pb-1
+  "
+        >
           <TabsTrigger value="directory">Staff Directory</TabsTrigger>
           <TabsTrigger value="assignments">Event Assignments</TabsTrigger>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
         </TabsList>
-        
+
+
         <TabsContent value="directory" className="space-y-4 m-0">
           <div className="flex flex-col md:flex-row gap-4 mb-4 justify-between">
             <div className="relative flex-grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input 
-                placeholder="Search staff..." 
-                className="w-full pl-9" 
+              <Input
+                placeholder="Search staff..."
+                className="w-full pl-9"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -214,14 +232,14 @@ const Staff: React.FC = () => {
                 <Filter className="h-4 w-4" />
                 <span>Filter</span>
               </Button>
-              <ExportButton 
-                data={filteredStaffMembers} 
-                filename="staff-directory" 
+              <ExportButton
+                data={filteredStaffMembers}
+                filename="staff-directory"
                 label="Export"
               />
             </div>
           </div>
-          
+
           <Card>
             <CardHeader className="pb-0">
               <CardTitle>Staff Members</CardTitle>
@@ -238,36 +256,54 @@ const Staff: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
+                      {/* Hide ID on mobile */}
+                      <TableHead className="hidden md:table-cell">ID</TableHead>
+
                       <TableHead>Name</TableHead>
-                      <TableHead className="hidden md:table-cell">Position</TableHead>
+
+                      {/* Show Position on ALL screens */}
+                      <TableHead>Position</TableHead>
+
                       <TableHead className="hidden lg:table-cell">Department</TableHead>
                       <TableHead className="hidden xl:table-cell">Contact</TableHead>
+
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
+
                   <TableBody>
                     {filteredStaffMembers.map((staff) => (
                       <TableRow key={staff.id} className="cursor-pointer hover:bg-gray-50">
-                        <TableCell className="font-medium">{staff.id.substring(0, 6)}</TableCell>
+
+                        {/* Hide ID on mobile */}
+                        <TableCell className="hidden md:table-cell font-medium">
+                          {staff.id.substring(0, 6)}
+                        </TableCell>
+
                         <TableCell>{staff.name}</TableCell>
-                        <TableCell className="hidden md:table-cell">{staff.position}</TableCell>
+
+                        {/* Position ALWAYS visible */}
+                        <TableCell>{staff.position}</TableCell>
+
                         <TableCell className="hidden lg:table-cell">{staff.department}</TableCell>
                         <TableCell className="hidden xl:table-cell">{staff.contact}</TableCell>
+
                         <TableCell>
                           <Badge className={getStatusColor(staff.status || '')}>
                             {getStatusLabel(staff.status || '')}
                           </Badge>
                         </TableCell>
+
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+
               )}
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="assignments" className="space-y-6 m-0">
           {staffAssignments?.map((event, index) => (
             <Card key={index}>
@@ -287,8 +323,8 @@ const Staff: React.FC = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {event.staff.map((member) => (
-                    <div 
-                      key={member.id} 
+                    <div
+                      key={member.id}
                       className="flex items-center p-3 rounded-lg border gap-3 hover:border-cyan-500 cursor-pointer"
                     >
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
@@ -313,7 +349,7 @@ const Staff: React.FC = () => {
             </Card>
           ))}
         </TabsContent>
-        
+
         <TabsContent value="schedule" className="m-0">
           <div className="bg-white rounded-md border min-h-[500px] p-6">
             <div className="text-center text-gray-500 pt-40">
@@ -325,8 +361,8 @@ const Staff: React.FC = () => {
           </div>
         </TabsContent>
       </Tabs>
-      
-      <StaffModal 
+
+      <StaffModal
         open={isAddStaffModalOpen}
         onOpenChange={setIsAddStaffModalOpen}
         mode="create"
