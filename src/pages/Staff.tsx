@@ -206,8 +206,8 @@ const Staff: React.FC = () => {
     flex-wrap
     gap-2
     w-full
-    pb-4
   "
+  style={{ paddingBottom: '4rem' }}
 >
   <TabsTrigger value="directory">Staff Directory</TabsTrigger>
   <TabsTrigger value="assignments">Event Assignments</TabsTrigger>
