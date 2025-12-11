@@ -44,13 +44,13 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [deleteBookingId, setDeleteBookingId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  
+
   // Check if the selected date is in the past
   const isSelectedDatePast = selectedDate ? isBefore(startOfDay(selectedDate), startOfDay(new Date())) : false;
-  
+
   // Find bookings for the selected date
   const getBookingsForDate = (date: Date) => {
     if (!date) return [];
@@ -63,7 +63,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
   };
 
   const selectedDateBookings = selectedDate ? getBookingsForDate(selectedDate) : [];
-  
+
   // Delete booking mutation
   const deleteBooking = useMutation({
     mutationFn: async (id: string) => {
@@ -71,7 +71,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
         .from('bookings')
         .delete()
         .eq('id', id);
-        
+
       if (error) throw error;
       return id;
     },
@@ -99,14 +99,14 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
       // Determine if there are confirmed or cancelled bookings on this date
       const hasConfirmed = bookingsOnDate.some(b => b.status === 'confirmed');
       const hasCancelled = bookingsOnDate.some(b => b.status === 'cancelled');
-      
+
       if (hasConfirmed) return "bg-green-100 text-green-800 font-bold rounded-full";
       if (hasCancelled) return "bg-red-100 text-red-800 font-bold rounded-full";
       return "bg-yellow-100 text-yellow-800 font-bold rounded-full"; // Pending
     }
     return "";
   };
-  
+
   const handleDeleteConfirm = () => {
     if (deleteBookingId) {
       deleteBooking.mutate(deleteBookingId);
@@ -158,8 +158,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
             <h3 className="text-lg font-medium">
               {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a date'}
             </h3>
-            <Button 
-              onClick={handleAddBooking} 
+
+            <Button
+              onClick={handleAddBooking}
               size="sm"
               disabled={isSelectedDatePast}
               className={isSelectedDatePast ? "opacity-50 cursor-not-allowed" : ""}
@@ -176,80 +177,53 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
             </div>
           )}
 
-          {selectedDateBookings.length === 0 ? (
-            <p className="text-muted-foreground text-center py-6">
-              No bookings for this date
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {selectedDateBookings.map(booking => {
-                const isBookingPast = isPastBooking(booking.start_date);
-                return (
-                  <div 
-                    key={booking.id} 
-                    className="border rounded-lg p-3 hover:bg-gray-50"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{booking.event_name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {booking.client?.name || 'No client'} - {booking.venue?.name || 'No venue'}
-                        </p>
-                        <p className="text-xs mt-1">
-                          {format(new Date(booking.start_date), 'h:mm a')} - 
-                          {booking.end_date && format(new Date(booking.end_date), 'h:mm a')}
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Badge className={
-                          booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }>
-                          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex justify-end mt-2 gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditBooking(booking.id)}
-                      >
-                        {isBookingPast ? (
-                          <>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </>
-                        ) : (
-                          <>
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </>
-                        )}
-                      </Button>
-                      {!isBookingPast && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="text-red-500 hover:bg-red-50"
-                          onClick={() => {
-                            setDeleteBookingId(booking.id);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      )}
-                    </div>
+          {/* ⭐ NEW — SHOW VENUE AVAILABILITY ⭐ */}
+          <div className="space-y-3">
+            {availableVenues.length === 0 ? (
+              <p className="text-muted-foreground text-center py-6">
+                No venues available or defined
+              </p>
+            ) : (
+              availableVenues.map(({ venue, fullDayAvailable, morningAvailable, eveningAvailable }) => (
+                <div key={venue.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                  <h4 className="font-medium">{venue.name}</h4>
+
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <Badge className={fullDayAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      Full Day • {fullDayAvailable ? "Available" : "Booked"}
+                    </Badge>
+
+                    <Badge className={morningAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      Morning • {morningAvailable ? "Available" : "Booked"}
+                    </Badge>
+
+                    <Badge className={eveningAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      Evening • {eveningAvailable ? "Available" : "Booked"}
+                    </Badge>
                   </div>
-                );
-              })}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* ⭐ OPTIONAL: Show list of actual bookings below */}
+          {selectedDateBookings.length > 0 && (
+            <div className="border-t pt-4 mt-4 space-y-3">
+              <h3 className="text-md font-semibold">Bookings for this date</h3>
+
+              {selectedDateBookings.map(booking => (
+                <div key={booking.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                  <h4 className="font-medium">{booking.event_name}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.client?.name || "No client"} – {booking.venue?.name || "No venue"}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
+
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
@@ -260,15 +234,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               disabled={deleteBooking.isPending}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteConfirm}
               disabled={deleteBooking.isPending}
             >
