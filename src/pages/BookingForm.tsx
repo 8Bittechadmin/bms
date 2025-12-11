@@ -33,23 +33,31 @@ const BookingForm = () => {
   const getDefaultDate = (hoursToAdd = 0) => {
     const date = new Date();
     date.setHours(date.getHours() + hoursToAdd);
-    return date.toISOString().slice(0, 16);
+    return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
   };
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(BookingFormSchema),
     defaultValues: {
       event_name: '',
-      event_type: '',
-      venue_id: '',
-      client_id: '',
+      event_type: 'conference', // default to avoid undefined
+      venue_id: null,
+      client_id: null,
       start_date: startDateParam ? `${startDateParam}T09:00` : getDefaultDate(),
       end_date: startDateParam ? `${startDateParam}T17:00` : getDefaultDate(8),
       guest_count: 1,
       deposit_paid: false,
       status: 'pending',
       is_full_day: true,
-      time_of_day: '',
+      time_of_day: null,
+      total_amount: null,
+      deposit_amount: null,
+      notes: null,
+      client_name: '',
+      bride_name: '',
+      groom_name: '',
+      address: '',
+      phone: '',
     },
   });
 
@@ -57,6 +65,7 @@ const BookingForm = () => {
     mutationFn: async (values: BookingFormValues) => {
       const isWedding = values.event_type === 'wedding';
 
+      // Insert main booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert({
@@ -69,7 +78,7 @@ const BookingForm = () => {
           guest_count: values.guest_count || 0,
           total_amount: values.total_amount || null,
           deposit_amount: values.deposit_amount || null,
-          deposit_paid: values.deposit_paid || false,
+          deposit_paid: values.deposit_paid ?? false,
           notes: values.notes || null,
           status: values.status || 'pending',
           is_full_day: values.is_full_day === true || values.is_full_day === 'true',
@@ -79,7 +88,7 @@ const BookingForm = () => {
 
       if (bookingError) throw bookingError;
 
-      // Wedding extra data
+      // Wedding-specific extra table
       if (isWedding && bookingData && bookingData.length > 0) {
         const bookingId = bookingData[0].id;
         const { error: weddingError } = await supabase
@@ -101,21 +110,35 @@ const BookingForm = () => {
     onMutate: async (values: BookingFormValues) => {
       await queryClient.cancelQueries({ queryKey: ['dashboardStats'] });
       const previousStats = queryClient.getQueryData(['dashboardStats']) as any;
+
       if (previousStats) {
         const bookingDate = new Date(values.start_date);
         const now = new Date();
-        const isThisMonth = bookingDate.getMonth() === now.getMonth() &&
-                            bookingDate.getFullYear() === now.getFullYear();
-        const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+        const isThisMonth =
+          bookingDate.getMonth() === now.getMonth() &&
+          bookingDate.getFullYear() === now.getFullYear();
+
+        const bookingDateOnly = new Date(
+          bookingDate.getFullYear(),
+          bookingDate.getMonth(),
+          bookingDate.getDate()
+        );
         const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const isToday = bookingDateOnly.getTime() === todayOnly.getTime();
+
         const updatedStats = {
           ...previousStats,
-          bookings_this_month: isThisMonth ? (previousStats.bookings_this_month || 0) + 1 : previousStats.bookings_this_month,
-          total_guests_today: isToday ? (previousStats.total_guests_today || 0) + (values.guest_count || 0) : previousStats.total_guests_today,
+          bookings_this_month: isThisMonth
+            ? (previousStats.bookings_this_month || 0) + 1
+            : previousStats.bookings_this_month,
+          total_guests_today: isToday
+            ? (previousStats.total_guests_today || 0) + (values.guest_count || 0)
+            : previousStats.total_guests_today,
         };
+
         queryClient.setQueryData(['dashboardStats'], updatedStats);
       }
+
       return { previousStats };
     },
     onSuccess: () => {
@@ -139,9 +162,7 @@ const BookingForm = () => {
     },
   });
 
-  const onSubmit = (values: BookingFormValues) => {
-    createBooking.mutate(values);
-  };
+  const onSubmit = (values: BookingFormValues) => createBooking.mutate(values);
 
   return (
     <AppLayout>
@@ -152,7 +173,9 @@ const BookingForm = () => {
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle>Booking Details</CardTitle>
-          <CardDescription>Provide all the necessary details for this booking</CardDescription>
+          <CardDescription>
+            Provide all the necessary details for this booking
+          </CardDescription>
           {startDateParam && (
             <div className="text-sm text-muted-foreground mt-1">
               Pre-selected date: {new Date(startDateParam).toLocaleDateString()}
@@ -162,7 +185,9 @@ const BookingForm = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <BookingFormFields form={form} preSelectedDate={startDateParam} />
-            <CardFooter className={`flex ${isMobile ? 'flex-col space-y-2' : 'justify-between'}`}>
+            <CardFooter
+              className={`flex ${isMobile ? 'flex-col space-y-2' : 'justify-between'}`}
+            >
               <Button
                 type="button"
                 variant="outline"
