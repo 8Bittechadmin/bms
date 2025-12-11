@@ -39,17 +39,21 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings = [], venues
   const isSelectedDatePast = selectedDate ? isBefore(startOfDay(selectedDate), startOfDay(new Date())) : false;
 
   const getBookingsForDate = (date: Date) => {
-    if (!date) return [];
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    return bookings.filter((b) => {
-      if (!b.start_date) return false;
-      const start = b.start_date?.split('T')[0] ?? '';
-      const end = b.end_date?.split('T')[0] ?? start;
-      return start <= formattedDate && end >= formattedDate;
-    });
-  };
+  const formatted = format(date, "yyyy-MM-dd");
 
-  const selectedDateBookings = selectedDate ? getBookingsForDate(selectedDate) : [];
+  return bookings.filter(b => {
+    const start = format(new Date(b.start_date), "yyyy-MM-dd");
+    const end = b.end_date
+      ? format(new Date(b.end_date), "yyyy-MM-dd")
+      : start;
+
+    return formatted >= start && formatted <= end;
+  });
+};
+
+  const selectedDateBookings = React.useMemo(() => {
+  return getBookingsForDate(selectedDate);
+}, [selectedDate, bookings]);
 
   useEffect(() => {
     if (!selectedDate) return;
