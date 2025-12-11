@@ -13,7 +13,9 @@ export default {
 	theme: {
 		container: {
 			center: true,
-			padding: '2rem',
+			padding: {DEFAULT: '0.1rem', // default padding on all sides
+        sm: '1rem',
+        lg: '2rem',},
 			screens: {
 				'2xl': '1400px'
 			}
@@ -116,9 +118,6 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.5s ease-out',
 				'fade-up': 'fade-up 0.5s ease-out'
-			},
-			padding: {
-				'px-0.1': '0.1rem', // adds class `px-0.1`
 			}
 		}
 	},

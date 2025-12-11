@@ -473,7 +473,6 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="px-0.1">
       <PageHeader 
         title="Dashboard" 
         description="Overview of today's events and key metrics."
@@ -718,7 +717,6 @@ const Dashboard = () => {
         isDeleting={deleteItemMutation.isPending}
         itemType={itemToDelete?.type || 'task'}
       />
-      </div>
     </AppLayout>
   );
 };
