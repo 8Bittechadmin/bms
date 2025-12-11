@@ -93,7 +93,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, className }) => {
         !isMobile && sidebarCollapsed && "ml-0", // Remove any left margin when collapsed
         className
       )}>
-        <div className="container mx-auto">
+        <div className="container px-0.1 mx-auto">
           {children}
         </div>
       </main>
