@@ -42,7 +42,7 @@ const StaffForm: React.FC<StaffFormProps> = ({
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
       {/* Scrollable content wrapper */}
-      <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
+      <div className="h-[70vh] overflow-y-scroll pr-2 space-y-4">
 
         <InputField
           form={form}
