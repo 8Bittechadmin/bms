@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 
 interface Booking {
   id: string;
@@ -14,9 +13,9 @@ interface Booking {
   event_type: string;
   venue: { id: string; name: string } | null;
   start_date: string;
-  end_date?: string;
+  end_date: string;
   is_full_day: boolean;
-  time_of_day?: 'morning' | 'evening';
+  time_of_day?: string;
   status: string;
 }
 
@@ -25,68 +24,45 @@ interface Venue {
   name: string;
 }
 
-const BookingCalendar: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [venues, setVenues] = useState<Venue[]>([]);
+interface BookingCalendarProps {
+  bookings: Booking[];
+  venues: Venue[];
+}
+
+const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings = [], venues = [] }) => {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [availableVenues, setAvailableVenues] = useState<
     { venue: Venue; fullDayAvailable: boolean; morningAvailable: boolean; eveningAvailable: boolean }[]
   >([]);
-  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
-  const isSelectedDatePast = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
-
-  // Fetch bookings and venues from Supabase
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const { data: bookingsData, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('*, client(name), venue(id, name)');
-        if (bookingsError) throw bookingsError;
-        setBookings(bookingsData ?? []);
-
-        const { data: venuesData, error: venuesError } = await supabase
-          .from('venues')
-          .select('*');
-        if (venuesError) throw venuesError;
-        setVenues(venuesData ?? []);
-      } catch (error: any) {
-        console.error('Error fetching data:', error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const isSelectedDatePast = selectedDate ? isBefore(startOfDay(selectedDate), startOfDay(new Date())) : false;
 
   const getBookingsForDate = (date: Date) => {
+    if (!date) return [];
     const formattedDate = format(date, 'yyyy-MM-dd');
-    return bookings.filter(b => {
+    return bookings.filter((b) => {
       if (!b.start_date) return false;
-      const start = b.start_date.split('T')[0];
+      const start = b.start_date?.split('T')[0] ?? '';
       const end = b.end_date?.split('T')[0] ?? start;
       return start <= formattedDate && end >= formattedDate;
     });
   };
 
-  const selectedDateBookings = getBookingsForDate(selectedDate);
+  const selectedDateBookings = selectedDate ? getBookingsForDate(selectedDate) : [];
 
-  // Calculate availability
   useEffect(() => {
     if (!selectedDate) return;
 
     const bookingsForDate = getBookingsForDate(selectedDate);
 
-    const availability = (venues ?? []).map(v => {
-      const venueBookings = bookingsForDate.filter(b => b.venue?.id === v.id);
+    const availability = (venues || []).map((v) => {
+      const venueBookings = (selectedDateBookings || []).filter((b) => b.venue?.id === v.id);
 
-      const fullDayBooked = venueBookings.some(b => b.is_full_day);
-      const halfDayMorningCount = venueBookings.filter(b => !b.is_full_day && b.time_of_day === 'morning').length;
-      const halfDayEveningCount = venueBookings.filter(b => !b.is_full_day && b.time_of_day === 'evening').length;
+      const fullDayBooked = venueBookings.some((b) => b.is_full_day);
+
+      const halfDayMorningCount = venueBookings.filter((b) => !b.is_full_day && b.time_of_day === 'morning').length;
+      const halfDayEveningCount = venueBookings.filter((b) => !b.is_full_day && b.time_of_day === 'evening').length;
 
       return {
         venue: v,
@@ -97,35 +73,26 @@ const BookingCalendar: React.FC = () => {
     });
 
     setAvailableVenues(availability);
-  }, [selectedDate, bookings, venues]);
+  }, [selectedDate, venues]);
 
   const getDayClassName = (date: Date) => {
     const bookingsOnDate = getBookingsForDate(date);
     if (!bookingsOnDate.length) return '';
-    const hasConfirmed = bookingsOnDate.some(b => b.status === 'confirmed');
-    const hasCancelled = bookingsOnDate.some(b => b.status === 'cancelled');
+    const hasConfirmed = bookingsOnDate.some((b) => b.status === 'confirmed');
+    const hasCancelled = bookingsOnDate.some((b) => b.status === 'cancelled');
     if (hasConfirmed) return 'bg-green-100 text-green-800 font-bold rounded-full';
     if (hasCancelled) return 'bg-red-100 text-red-800 font-bold rounded-full';
     return 'bg-yellow-100 text-yellow-800 font-bold rounded-full';
   };
 
   const handleAddBooking = () => {
-    if (!isSelectedDatePast) {
+    if (selectedDate && !isSelectedDatePast) {
       navigate(`/bookings/new?date=${format(selectedDate, 'yyyy-MM-dd')}`);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-gray-500">Loading bookings...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      {/* Calendar */}
       <div className="bg-white p-4 rounded-md w-full mx-auto">
         <CalendarComponent
           mode="single"
@@ -143,19 +110,23 @@ const BookingCalendar: React.FC = () => {
                   )}
                 </div>
               );
-            }
+            },
           }}
         />
       </div>
 
-      {/* Venue Availability */}
       <Card>
         <CardContent className="p-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">
-              {format(selectedDate, 'MMMM d, yyyy')}
+              {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a date'}
             </h3>
-            <Button onClick={handleAddBooking} size="sm" disabled={isSelectedDatePast} className={isSelectedDatePast ? 'opacity-50 cursor-not-allowed' : ''}>
+            <Button
+              onClick={handleAddBooking}
+              size="sm"
+              disabled={isSelectedDatePast}
+              className={isSelectedDatePast ? 'opacity-50 cursor-not-allowed' : ''}
+            >
               Add Booking
             </Button>
           </div>
@@ -168,13 +139,14 @@ const BookingCalendar: React.FC = () => {
             </div>
           )}
 
-          {availableVenues.length === 0 ? (
-            <p className="text-muted-foreground text-center py-6">No bookings or venues for this date</p>
-          ) : (
-            <div className="space-y-3">
-              {availableVenues.map(({ venue, fullDayAvailable, morningAvailable, eveningAvailable }) => (
-                <div key={venue?.id} className="border rounded-lg p-3 hover:bg-gray-50">
-                  <h4 className="font-medium">{venue?.name ?? 'Unknown Venue'}</h4>
+          {/* Venue Availability Section */}
+          <div className="space-y-3">
+            {availableVenues.length === 0 ? (
+              <p className="text-muted-foreground text-center py-6">No bookings for this date</p>
+            ) : (
+              availableVenues.map(({ venue, fullDayAvailable, morningAvailable, eveningAvailable }) => (
+                <div key={venue.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                  <h4 className="font-medium">{venue.name}</h4>
                   <div className="flex gap-2 mt-2 flex-wrap">
                     <Badge className={fullDayAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                       Full Day {fullDayAvailable ? 'Available' : 'Booked'}
@@ -186,6 +158,45 @@ const BookingCalendar: React.FC = () => {
                       Evening {eveningAvailable ? 'Available' : 'Booked'}
                     </Badge>
                   </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Divider */}
+          <hr className="my-4" />
+
+          {/* Bookings List */}
+          <h3 className="text-lg font-medium mb-2">Bookings</h3>
+
+          {selectedDateBookings.length === 0 ? (
+            <p className="text-muted-foreground text-center py-6">No bookings on this date</p>
+          ) : (
+            <div className="space-y-3">
+              {selectedDateBookings.map((booking) => (
+                <div key={booking.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                  <h4 className="font-medium">{booking.event_name}</h4>
+
+                  <p className="text-sm text-muted-foreground">
+                    {booking.client?.name || 'No client'} — {booking.venue?.name || 'No venue'}
+                  </p>
+
+                  <p className="text-xs mt-1">
+                    {booking.start_date && format(new Date(booking.start_date), 'h:mm a')} —
+                    {booking.end_date && format(new Date(booking.end_date), 'h:mm a')}
+                  </p>
+
+                  <Badge
+                    className={
+                      booking.status === 'confirmed'
+                        ? 'bg-green-100 text-green-800'
+                        : booking.status === 'cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }
+                  >
+                    {booking.status}
+                  </Badge>
                 </div>
               ))}
             </div>
