@@ -21,7 +21,7 @@ export const BookingFormSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   is_full_day: z.boolean().optional().default(true),
-  time_of_day: z.string().optional(),
+  time_of_day: z.string().optional(), // 'morning' | 'evening'
 })
 .refine((data) => !!data.client_name || !!data.client_id, {
   message: 'Client information is required',
@@ -32,27 +32,29 @@ export const BookingFormSchema = z.object({
   path: ['time_of_day'],
 })
 .refine((data, ctx) => {
-  // This refinement checks bookings per date
+  // Get existing bookings from context
   const bookings: BookingFormValues[] = ctx.options?.context?.bookings || [];
   const selectedDate = data.start_date?.split('T')[0];
   if (!selectedDate) return true;
 
+  // Filter bookings for the same date, excluding current booking if editing
   const existingBookings = bookings.filter(b => {
     const bDate = b.start_date?.split('T')[0];
     return bDate === selectedDate && b.id !== data.id;
   });
 
-  if (data.is_full_day && existingBookings.length > 0) {
-    return false; // Cannot book full day if any booking exists
-  }
-
-  if (!data.is_full_day) {
-    // Half day can have max 2 bookings per day
-    if (existingBookings.length >= 2) return false;
+  if (data.is_full_day) {
+    // Only allow 1 full-day booking per day
+    const hasFullDayBooking = existingBookings.some(b => b.is_full_day);
+    if (hasFullDayBooking) return false;
+  } else {
+    // Allow up to 2 half-day bookings per day
+    const halfDayCount = existingBookings.filter(b => !b.is_full_day).length;
+    if (halfDayCount >= 2) return false;
   }
 
   return true;
 }, {
-  message: 'Selected date/time already has maximum allowed bookings',
+  message: 'Selected date already has maximum allowed bookings (1 full day or 2 half days)',
   path: ['start_date'],
 });
