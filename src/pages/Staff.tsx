@@ -199,21 +199,27 @@ const Staff: React.FC = () => {
 
       <Tabs defaultValue="directory" className="mb-6">
         <TabsList
-          className="
+  className="
     mb-4 
-    inline-flex 
-    gap-2 
-    overflow-x-auto 
-    whitespace-nowrap 
-    scrollbar-hide 
+    flex 
+    justify-between 
     w-full 
-    pb-1
+    gap-2
   "
-        >
-          <TabsTrigger value="directory">Staff Directory</TabsTrigger>
-          <TabsTrigger value="assignments">Event Assignments</TabsTrigger>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
-        </TabsList>
+>
+  <TabsTrigger value="directory" className="flex-1 text-center">
+    Staff Directory
+  </TabsTrigger>
+
+  <TabsTrigger value="assignments" className="flex-1 text-center">
+    Event Assignments
+  </TabsTrigger>
+
+  <TabsTrigger value="schedule" className="flex-1 text-center">
+    Schedule
+  </TabsTrigger>
+</TabsList>
+
 
 
         <TabsContent value="directory" className="space-y-4 m-0">

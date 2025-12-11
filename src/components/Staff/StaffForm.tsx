@@ -40,6 +40,8 @@ const StaffForm: React.FC<StaffFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Scrollable content wrapper */}
+        <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
         <InputField
           form={form}
           name="name"
@@ -74,7 +76,7 @@ const StaffForm: React.FC<StaffFormProps> = ({
           label="Status"
           options={STATUS_OPTIONS}
         />
-        
+        </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
@@ -83,6 +85,7 @@ const StaffForm: React.FC<StaffFormProps> = ({
             {isSubmitting ? 'Saving...' : 'Save Staff'}
           </Button>
         </DialogFooter>
+        
       </form>
     </Form>
   );
