@@ -35,8 +35,17 @@ const BookingForm = () => {
     return date.toISOString().slice(0, 16);
   };
 
+  // Fetch existing bookings for validation
+  const { data: existingBookings = [], isLoading: bookingsLoading } = useQuery<BookingFormValues[]>(
+    ['bookings'],
+    async () => {
+      const { data } = await supabase.from('bookings').select('*');
+      return data || [];
+    }
+  );
+
   const form = useForm<BookingFormValues>({
-    resolver: zodResolver(BookingFormSchema),
+    resolver: zodResolver(BookingFormSchema, { context: { bookings: existingBookings } }),
     defaultValues: {
       event_name: '',
       event_type: 'conference',
@@ -60,10 +69,11 @@ const BookingForm = () => {
     },
   });
 
-  const createBooking = useMutation(
-    async (values: BookingFormValues) => {
+  const createBooking = useMutation({
+    mutationFn: async (values: BookingFormValues) => {
       const isWedding = values.event_type === 'wedding';
 
+      // Insert main booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert({
@@ -86,7 +96,8 @@ const BookingForm = () => {
 
       if (bookingError) throw bookingError;
 
-      if (isWedding && bookingData && bookingData.length > 0) {
+      // Insert wedding details if applicable
+      if (isWedding && bookingData?.length) {
         const bookingId = bookingData[0].id;
         const { error: weddingError } = await supabase
           .from('wedding_bookings')
@@ -104,64 +115,36 @@ const BookingForm = () => {
 
       return bookingData;
     },
-    {
-      onMutate: async (values: BookingFormValues) => {
-        await queryClient.cancelQueries('dashboardStats');
-        const previousStats = queryClient.getQueryData('dashboardStats') as any;
+    onSuccess: () => {
+      toast({
+        title: 'Booking created',
+        description: 'The booking has been successfully created.',
+      });
+      queryClient.invalidateQueries(['bookings']);
+      navigate('/bookings');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: `Failed to create booking: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
 
-        if (previousStats) {
-          const bookingDate = new Date(values.start_date);
-          const now = new Date();
-          const isThisMonth =
-            bookingDate.getMonth() === now.getMonth() &&
-            bookingDate.getFullYear() === now.getFullYear();
-
-          const bookingDateOnly = new Date(
-            bookingDate.getFullYear(),
-            bookingDate.getMonth(),
-            bookingDate.getDate()
-          );
-          const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const isToday = bookingDateOnly.getTime() === todayOnly.getTime();
-
-          const updatedStats = {
-            ...previousStats,
-            bookings_this_month: isThisMonth
-              ? (previousStats.bookings_this_month || 0) + 1
-              : previousStats.bookings_this_month,
-            total_guests_today: isToday
-              ? (previousStats.total_guests_today || 0) + (values.guest_count || 0)
-              : previousStats.total_guests_today,
-          };
-
-          queryClient.setQueryData('dashboardStats', updatedStats);
-        }
-
-        return { previousStats };
-      },
-      onSuccess: () => {
-        toast({
-          title: 'Booking created',
-          description: 'The booking has been successfully created.',
-        });
-        queryClient.invalidateQueries('bookings');
-        queryClient.invalidateQueries('dashboardStats');
-        navigate('/bookings');
-      },
-      onError: (error: any, variables, context: any) => {
-        if (context?.previousStats) {
-          queryClient.setQueryData('dashboardStats', context.previousStats);
-        }
-        toast({
-          title: 'Error',
-          description: `Failed to create booking: ${error.message}`,
-          variant: 'destructive',
-        });
-      },
+  const onSubmit = (values: BookingFormValues) => {
+    try {
+      createBooking.mutate(values);
+    } catch (err: any) {
+      toast({
+        title: 'Validation Error',
+        description: err.message || 'Booking validation failed',
+        variant: 'destructive',
+      });
     }
-  );
+  };
 
-  const onSubmit = (values: BookingFormValues) => createBooking.mutate(values);
+  if (bookingsLoading) return <div>Loading...</div>;
 
   return (
     <AppLayout>
