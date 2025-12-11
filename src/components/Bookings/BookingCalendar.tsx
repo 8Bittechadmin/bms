@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Booking {
   id: string;
@@ -24,31 +25,49 @@ interface Venue {
   name: string;
 }
 
-interface BookingCalendarProps {
-  bookings?: Booking[];
-  venues?: Venue[];
-  isLoading?: boolean;
-}
-
-const BookingCalendar: React.FC<BookingCalendarProps> = ({
-  bookings = [],
-  venues = [],
-  isLoading = false,
-}) => {
+const BookingCalendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [availableVenues, setAvailableVenues] = useState<
     { venue: Venue; fullDayAvailable: boolean; morningAvailable: boolean; eveningAvailable: boolean }[]
   >([]);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
-
   const isSelectedDatePast = isBefore(startOfDay(selectedDate), startOfDay(new Date()));
+
+  // Fetch bookings and venues from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const { data: bookingsData, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('*, client(name), venue(id, name)');
+        if (bookingsError) throw bookingsError;
+        setBookings(bookingsData ?? []);
+
+        const { data: venuesData, error: venuesError } = await supabase
+          .from('venues')
+          .select('*');
+        if (venuesError) throw venuesError;
+        setVenues(venuesData ?? []);
+      } catch (error: any) {
+        console.error('Error fetching data:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const getBookingsForDate = (date: Date) => {
     const formattedDate = format(date, 'yyyy-MM-dd');
     return bookings.filter(b => {
       if (!b.start_date) return false;
-      const start = b.start_date?.split('T')[0] ?? '';
+      const start = b.start_date.split('T')[0];
       const end = b.end_date?.split('T')[0] ?? start;
       return start <= formattedDate && end >= formattedDate;
     });
@@ -56,12 +75,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const selectedDateBookings = getBookingsForDate(selectedDate);
 
+  // Calculate availability
   useEffect(() => {
     if (!selectedDate) return;
 
     const bookingsForDate = getBookingsForDate(selectedDate);
 
-    const availability = venues.map(v => {
+    const availability = (venues ?? []).map(v => {
       const venueBookings = bookingsForDate.filter(b => b.venue?.id === v.id);
 
       const fullDayBooked = venueBookings.some(b => b.is_full_day);
@@ -77,7 +97,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     });
 
     setAvailableVenues(availability);
-  }, [selectedDate, venues, bookings]);
+  }, [selectedDate, bookings, venues]);
 
   const getDayClassName = (date: Date) => {
     const bookingsOnDate = getBookingsForDate(date);
@@ -95,7 +115,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <p className="text-gray-500">Loading bookings...</p>
