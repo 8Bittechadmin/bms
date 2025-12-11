@@ -1,13 +1,13 @@
-import React from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import AppLayout from '@/components/AppLayout';
-import PageHeader from '@/components/PageHeader';
-import { Form } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
+import AppLayout from "@/components/AppLayout";
+import PageHeader from "@/components/PageHeader";
+import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -15,18 +15,21 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import BookingFormFields from '@/components/Bookings/BookingFormFields';
-import { BookingFormSchema, type BookingFormValues } from '@/components/Bookings/BookingFormSchema';
-import { useIsMobile } from '@/hooks/use-mobile';
+} from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import BookingFormFields from "@/components/Bookings/BookingFormFields";
+import {
+  BookingFormSchema,
+  type BookingFormValues,
+} from "@/components/Bookings/BookingFormSchema";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const BookingForm = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const startDateParam = searchParams.get('date');
+  const startDateParam = searchParams.get("date");
   const isMobile = useIsMobile();
 
   const getDefaultDate = (hoursToAdd = 0) => {
@@ -35,47 +38,52 @@ const BookingForm = () => {
     return date.toISOString().slice(0, 16);
   };
 
-  // Fetch existing bookings for validation
-  const { data: existingBookings = [], isLoading: bookingsLoading } = useQuery<BookingFormValues[]>(
-    ['bookings'],
-    async () => {
-      const { data } = await supabase.from('bookings').select('*');
-      return data || [];
-    }
-  );
+  // FETCH BOOKINGS FOR VALIDATION
+  const {
+    data: bookings = [],
+    isLoading: bookingsLoading,
+  } = useQuery<BookingFormValues[]>(["bookings"], async () => {
+    const { data } = await supabase.from("bookings").select("*");
+    return data || [];
+  });
 
+  // REACT HOOK FORM
   const form = useForm<BookingFormValues>({
-    resolver: zodResolver(BookingFormSchema, { context: { bookings: existingBookings } }),
+    resolver: zodResolver(BookingFormSchema),
     defaultValues: {
-      event_name: '',
-      event_type: 'conference',
+      event_name: "",
+      event_type: "conference",
       venue_id: null,
       client_id: null,
-      start_date: startDateParam ? `${startDateParam}T09:00` : getDefaultDate(),
-      end_date: startDateParam ? `${startDateParam}T17:00` : getDefaultDate(8),
+      start_date: startDateParam
+        ? `${startDateParam}T09:00`
+        : getDefaultDate(),
+      end_date: startDateParam
+        ? `${startDateParam}T17:00`
+        : getDefaultDate(8),
       guest_count: 1,
       deposit_paid: false,
-      status: 'pending',
+      status: "pending",
       is_full_day: true,
       time_of_day: null,
       total_amount: null,
       deposit_amount: null,
       notes: null,
-      client_name: '',
-      bride_name: '',
-      groom_name: '',
-      address: '',
-      phone: '',
+      client_name: "",
+      bride_name: "",
+      groom_name: "",
+      address: "",
+      phone: "",
     },
   });
 
+  // CREATE BOOKING MUTATION
   const createBooking = useMutation({
     mutationFn: async (values: BookingFormValues) => {
-      const isWedding = values.event_type === 'wedding';
+      const isWedding = values.event_type === "wedding";
 
-      // Insert main booking
       const { data: bookingData, error: bookingError } = await supabase
-        .from('bookings')
+        .from("bookings")
         .insert({
           event_name: values.event_name,
           event_type: values.event_type,
@@ -88,28 +96,31 @@ const BookingForm = () => {
           deposit_amount: values.deposit_amount || null,
           deposit_paid: values.deposit_paid ?? false,
           notes: values.notes || null,
-          status: values.status || 'pending',
-          is_full_day: values.is_full_day === true || values.is_full_day === 'true',
+          status: values.status || "pending",
+          is_full_day:
+            values.is_full_day === true || values.is_full_day === "true",
           time_of_day: values.time_of_day || null,
         })
         .select();
 
       if (bookingError) throw bookingError;
 
-      // Insert wedding details if applicable
+      // Insert WEDDING DETAILS
       if (isWedding && bookingData?.length) {
         const bookingId = bookingData[0].id;
         const { error: weddingError } = await supabase
-          .from('wedding_bookings')
+          .from("wedding_bookings")
           .insert({
             booking_id: bookingId,
-            client_name: values.client_name || '',
-            bride_name: values.bride_name || '',
-            groom_name: values.groom_name || '',
-            address: values.address || '',
-            phone: values.phone || '',
-            is_full_day: values.is_full_day === true || values.is_full_day === 'true',
+            client_name: values.client_name || "",
+            bride_name: values.bride_name || "",
+            groom_name: values.groom_name || "",
+            address: values.address || "",
+            phone: values.phone || "",
+            is_full_day:
+              values.is_full_day === true || values.is_full_day === "true",
           });
+
         if (weddingError) throw weddingError;
       }
 
@@ -117,21 +128,22 @@ const BookingForm = () => {
     },
     onSuccess: () => {
       toast({
-        title: 'Booking created',
-        description: 'The booking has been successfully created.',
+        title: "Booking created",
+        description: "The booking has been successfully created.",
       });
-      queryClient.invalidateQueries(['bookings']);
-      navigate('/bookings');
+      queryClient.invalidateQueries(["bookings"]);
+      navigate("/bookings");
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
+        title: "Error",
         description: `Failed to create booking: ${error.message}`,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
+  // FINAL SUBMIT HANDLER (YOUR PERFECT BOOKING LOGIC)
   const onSubmit = async (values: BookingFormValues) => {
     const selectedDate = values.start_date.split("T")[0];
 
@@ -142,33 +154,54 @@ const BookingForm = () => {
         b.id !== values.id
     );
 
-    // FULL DAY RULE
+    // FULL DAY RULES
     if (values.is_full_day) {
       if (sameDay.some((b) => b.is_full_day)) {
-        toast.error("This venue already has a full-day booking on this date.");
+        toast({
+          title: "Full day not available",
+          description:
+            "A full-day booking already exists for this venue on this date.",
+          variant: "destructive",
+        });
         return;
       }
       if (sameDay.length >= 1) {
-        toast.error("Cannot add full-day booking because half-day bookings exist.");
+        toast({
+          title: "Full day blocked",
+          description:
+            "Cannot create full-day booking because half-day bookings exist.",
+          variant: "destructive",
+        });
         return;
       }
     }
 
-    // HALF DAY RULE
+    // HALF DAY RULES
     else {
       const halfDays = sameDay.filter((b) => !b.is_full_day);
+
       if (halfDays.length >= 2) {
-        toast.error("Two half-day bookings already exist for this venue.");
+        toast({
+          title: "No more slots",
+          description:
+            "Two half-day bookings already exist for this venue on this date.",
+          variant: "destructive",
+        });
         return;
       }
+
       if (halfDays.some((b) => b.time_of_day === values.time_of_day)) {
-        toast.error(`A ${values.time_of_day} booking already exists.`);
+        toast({
+          title: "Slot taken",
+          description: `The ${values.time_of_day} slot is already booked.`,
+          variant: "destructive",
+        });
         return;
       }
     }
 
-    // If passed → submit
-    await mutate(values);
+    // PASSED VALIDATION → CREATE BOOKING
+    await createBooking.mutateAsync(values);
   };
 
   if (bookingsLoading) return <div>Loading...</div>;
@@ -179,38 +212,49 @@ const BookingForm = () => {
         title="Create New Booking"
         description="Fill out the form below to create a new event booking."
       />
+
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle>Booking Details</CardTitle>
           <CardDescription>
             Provide all the necessary details for this booking
           </CardDescription>
+
           {startDateParam && (
             <div className="text-sm text-muted-foreground mt-1">
-              Pre-selected date: {new Date(startDateParam).toLocaleDateString()}
+              Pre-selected date:{" "}
+              {new Date(startDateParam).toLocaleDateString()}
             </div>
           )}
         </CardHeader>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <BookingFormFields form={form} preSelectedDate={startDateParam} />
+            <BookingFormFields
+              form={form}
+              preSelectedDate={startDateParam}
+            />
+
             <CardFooter
-              className={`flex ${isMobile ? 'flex-col space-y-2' : 'justify-between'}`}
+              className={`flex ${
+                isMobile ? "flex-col space-y-2" : "justify-between"
+              }`}
             >
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/bookings')}
-                className={isMobile ? 'w-full' : ''}
+                onClick={() => navigate("/bookings")}
+                className={isMobile ? "w-full" : ""}
               >
                 Cancel
               </Button>
+
               <Button
                 type="submit"
                 disabled={createBooking.isLoading}
-                className={isMobile ? 'w-full' : ''}
+                className={isMobile ? "w-full" : ""}
               >
-                {createBooking.isLoading ? 'Creating...' : 'Create Booking'}
+                {createBooking.isLoading ? "Creating..." : "Create Booking"}
               </Button>
             </CardFooter>
           </form>
