@@ -132,16 +132,43 @@ const BookingForm = () => {
     },
   });
 
-  const onSubmit = (values: BookingFormValues) => {
-    try {
-      createBooking.mutate(values);
-    } catch (err: any) {
-      toast({
-        title: 'Validation Error',
-        description: err.message || 'Booking validation failed',
-        variant: 'destructive',
-      });
+  const onSubmit = async (values: BookingFormValues) => {
+    const selectedDate = values.start_date.split("T")[0];
+
+    const sameDay = bookings.filter(
+      (b) =>
+        b.venue_id === values.venue_id &&
+        b.start_date.split("T")[0] === selectedDate &&
+        b.id !== values.id
+    );
+
+    // FULL DAY RULE
+    if (values.is_full_day) {
+      if (sameDay.some((b) => b.is_full_day)) {
+        toast.error("This venue already has a full-day booking on this date.");
+        return;
+      }
+      if (sameDay.length >= 1) {
+        toast.error("Cannot add full-day booking because half-day bookings exist.");
+        return;
+      }
     }
+
+    // HALF DAY RULE
+    else {
+      const halfDays = sameDay.filter((b) => !b.is_full_day);
+      if (halfDays.length >= 2) {
+        toast.error("Two half-day bookings already exist for this venue.");
+        return;
+      }
+      if (halfDays.some((b) => b.time_of_day === values.time_of_day)) {
+        toast.error(`A ${values.time_of_day} booking already exists.`);
+        return;
+      }
+    }
+
+    // If passed → submit
+    await mutate(values);
   };
 
   if (bookingsLoading) return <div>Loading...</div>;
