@@ -30,13 +30,12 @@ const BookingForm = () => {
   const isMobile = useIsMobile();
 
   // Fetch existing bookings for validation
-  const { data: bookings = [] } = useQuery(['bookings'], async () => {
+  const { data: existingBookings = [] } = useQuery(['bookings'], async () => {
     const { data, error } = await supabase.from('bookings').select('*');
     if (error) throw error;
     return data;
   });
 
-  // Default date helper
   const getDefaultDate = (hoursToAdd = 0) => {
     const date = new Date();
     date.setHours(date.getHours() + hoursToAdd);
@@ -44,7 +43,7 @@ const BookingForm = () => {
   };
 
   const form = useForm<BookingFormValues>({
-    resolver: zodResolver(BookingFormSchema, { context: { bookings } }),
+    resolver: zodResolver(BookingFormSchema, { context: { bookings: existingBookings } }),
     defaultValues: {
       event_name: '',
       event_type: 'conference',
@@ -66,12 +65,14 @@ const BookingForm = () => {
       address: '',
       phone: '',
     },
+    mode: 'onChange', // validate on every change
   });
 
   const createBooking = useMutation({
     mutationFn: async (values: BookingFormValues) => {
       const isWedding = values.event_type === 'wedding';
 
+      // Insert main booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert({
@@ -87,13 +88,14 @@ const BookingForm = () => {
           deposit_paid: values.deposit_paid ?? false,
           notes: values.notes || null,
           status: values.status || 'pending',
-          is_full_day: !!values.is_full_day,
+          is_full_day: values.is_full_day === true || values.is_full_day === 'true',
           time_of_day: values.time_of_day || null,
         })
         .select();
 
       if (bookingError) throw bookingError;
 
+      // Wedding-specific extra table
       if (isWedding && bookingData && bookingData.length > 0) {
         const bookingId = bookingData[0].id;
         const { error: weddingError } = await supabase
@@ -105,7 +107,7 @@ const BookingForm = () => {
             groom_name: values.groom_name || '',
             address: values.address || '',
             phone: values.phone || '',
-            is_full_day: !!values.is_full_day,
+            is_full_day: values.is_full_day === true || values.is_full_day === 'true',
           });
         if (weddingError) throw weddingError;
       }
@@ -122,6 +124,7 @@ const BookingForm = () => {
         const isThisMonth =
           bookingDate.getMonth() === now.getMonth() &&
           bookingDate.getFullYear() === now.getFullYear();
+
         const bookingDateOnly = new Date(
           bookingDate.getFullYear(),
           bookingDate.getMonth(),
@@ -166,33 +169,7 @@ const BookingForm = () => {
     },
   });
 
-  const onSubmit = (values: BookingFormValues) => {
-    // Venue conflict checks
-    const selectedDate = values.start_date.split('T')[0];
-    const venueBookings = bookings.filter(
-      b => b.venue_id === values.venue_id && b.start_date.split('T')[0] === selectedDate
-    );
-
-    if (values.is_full_day && venueBookings.some(b => b.is_full_day)) {
-      toast({
-        title: 'Conflict',
-        description: 'A full-day booking already exists at this venue on this date.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!values.is_full_day && venueBookings.filter(b => !b.is_full_day).length >= 2) {
-      toast({
-        title: 'Conflict',
-        description: 'Two half-day bookings already exist at this venue on this date.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    createBooking.mutate(values);
-  };
+  const onSubmit = (values: BookingFormValues) => createBooking.mutate(values);
 
   return (
     <AppLayout>
@@ -203,7 +180,9 @@ const BookingForm = () => {
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle>Booking Details</CardTitle>
-          <CardDescription>Provide all the necessary details for this booking</CardDescription>
+          <CardDescription>
+            Provide all the necessary details for this booking
+          </CardDescription>
           {startDateParam && (
             <div className="text-sm text-muted-foreground mt-1">
               Pre-selected date: {new Date(startDateParam).toLocaleDateString()}
@@ -213,6 +192,14 @@ const BookingForm = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <BookingFormFields form={form} preSelectedDate={startDateParam} />
+
+            {/* Display Zod validation errors */}
+            {form.formState.errors.start_date && (
+              <div className="text-red-600 text-sm mt-1">
+                {form.formState.errors.start_date.message}
+              </div>
+            )}
+
             <CardFooter
               className={`flex ${isMobile ? 'flex-col space-y-2' : 'justify-between'}`}
             >
@@ -226,7 +213,7 @@ const BookingForm = () => {
               </Button>
               <Button
                 type="submit"
-                disabled={createBooking.isPending}
+                disabled={!form.formState.isValid || createBooking.isPending} // disabled if invalid
                 className={isMobile ? 'w-full' : ''}
               >
                 {createBooking.isPending ? 'Creating...' : 'Create Booking'}

@@ -21,7 +21,7 @@ export const BookingFormSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   is_full_day: z.boolean().optional().nullable(),
-  time_of_day: z.enum(['morning', 'evening']).optional().nullable(), // for half-day bookings
+  time_of_day: z.enum(['morning','evening']).optional().nullable(), // 'morning' | 'evening'
 })
 .refine((data) => !!data.client_name || !!data.client_id, {
   message: 'Client information is required',
@@ -32,30 +32,29 @@ export const BookingFormSchema = z.object({
   path: ['time_of_day'],
 })
 .refine((data, ctx) => {
-  try {
-    const bookings: BookingFormValues[] = ctx?.options?.context?.bookings ?? [];
-    const selectedDate = data.start_date?.split('T')[0];
-    if (!selectedDate || !data.venue_id) return true;
+  // venue-aware booking conflict validation
+  const bookings: BookingFormValues[] = ctx.options?.context?.bookings ?? [];
+  const selectedDate = data.start_date?.split('T')[0];
+  if (!selectedDate || !data.venue_id) return true;
 
-    // Filter bookings for same date and same venue, excluding current booking if editing
-    const existingBookings = bookings.filter((b) => {
-      const bDate = b.start_date?.split('T')[0];
-      return bDate === selectedDate && b.venue_id === data.venue_id && b.id !== data.id;
-    });
+  // Filter bookings for the same date and venue, excluding current booking if editing
+  const existingBookings = bookings.filter(b => {
+    const bDate = b.start_date?.split('T')[0];
+    return bDate === selectedDate && b.venue_id === data.venue_id && b.id !== data.id;
+  });
 
-    if (data.is_full_day) {
-      const hasFullDayBooking = existingBookings.some((b) => b.is_full_day);
-      if (hasFullDayBooking) return false; // Prevent 2 full-day bookings at same venue
-    } else {
-      const halfDayCount = existingBookings.filter((b) => !b.is_full_day).length;
-      if (halfDayCount >= 2) return false; // Prevent >2 half-day bookings at same venue
-    }
-
-    return true;
-  } catch (err) {
-    return true;
+  if (data.is_full_day) {
+    // Only allow 1 full-day booking per venue per day
+    const hasFullDayBooking = existingBookings.some(b => b.is_full_day);
+    if (hasFullDayBooking) return false;
+  } else {
+    // Allow up to 2 half-day bookings per venue per day
+    const halfDayCount = existingBookings.filter(b => !b.is_full_day).length;
+    if (halfDayCount >= 2) return false;
   }
+
+  return true;
 }, {
-  message: 'Selected date already has maximum allowed bookings at this venue (1 full day or 2 half days)',
+  message: 'Selected venue already has maximum allowed bookings (1 full day or 2 half days) on this date',
   path: ['start_date'],
 });
