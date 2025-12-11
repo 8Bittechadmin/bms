@@ -36,30 +36,30 @@ export const BookingFormSchema = z
   })
   // Prevent overbooking on the same date
   .refine((data, ctx) => {
-    try {
-      const bookings: BookingFormValues[] = ctx?.options?.context?.bookings ?? [];
-      const selectedDate = data.start_date?.split('T')[0];
-      if (!selectedDate) return true;
+  try {
+    const bookings: BookingFormValues[] = ctx?.options?.context?.bookings ?? [];
+    const selectedDate = data.start_date?.split('T')[0];
+    if (!selectedDate || !data.venue_id) return true;
 
-      const existingBookings = bookings.filter((b) => {
-        const bDate = b.start_date?.split('T')[0];
-        return bDate === selectedDate && b.id !== data.id;
-      });
+    // Filter bookings for the same date and same venue, excluding current booking if editing
+    const existingBookings = bookings.filter((b) => {
+      const bDate = b.start_date?.split('T')[0];
+      return bDate === selectedDate && b.venue_id === data.venue_id && b.id !== data.id;
+    });
 
-      if (data.is_full_day) {
-        const hasFullDayBooking = existingBookings.some((b) => b.is_full_day);
-        if (hasFullDayBooking) return false;
-      } else {
-        const halfDayCount = existingBookings.filter((b) => !b.is_full_day).length;
-        if (halfDayCount >= 2) return false;
-      }
-
-      return true;
-    } catch (err) {
-      // Safety fallback if context is undefined
-      return true;
+    if (data.is_full_day) {
+      const hasFullDayBooking = existingBookings.some((b) => b.is_full_day);
+      if (hasFullDayBooking) return false; // Prevent 2 full-day bookings at same venue
+    } else {
+      const halfDayCount = existingBookings.filter((b) => !b.is_full_day).length;
+      if (halfDayCount >= 2) return false; // Prevent >2 half-day bookings at same venue
     }
-  }, {
-    message: 'Selected date already has maximum allowed bookings (1 full day or 2 half days)',
-    path: ['start_date'],
-  });
+
+    return true;
+  } catch (err) {
+    return true;
+  }
+}, {
+  message: 'Selected date already has maximum allowed bookings at this venue (1 full day or 2 half days)',
+  path: ['start_date'],
+});
