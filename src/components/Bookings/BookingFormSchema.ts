@@ -35,20 +35,18 @@ export const BookingFormSchema = z.object({
   // venue-aware booking conflict validation
   const bookings: BookingFormValues[] = ctx.options?.context?.bookings ?? [];
   const selectedDate = data.start_date?.split('T')[0];
-  if (!selectedDate || !data.venue_id) return true;
+  if (!selectedDate) return true;
 
   // Filter bookings for the same date and venue, excluding current booking if editing
   const existingBookings = bookings.filter(b => {
-    const bDate = b.start_date?.split('T')[0];
-    return bDate === selectedDate && b.venue_id === data.venue_id && b.id !== data.id;
-  });
+  const bDate = b.start_date?.split('T')[0];
+  return bDate === selectedDate && b.id !== data.id && b.venue_id === data.venue_id;
+});
 
   if (data.is_full_day) {
-    // Only allow 1 full-day booking per venue per day
     const hasFullDayBooking = existingBookings.some(b => b.is_full_day);
     if (hasFullDayBooking) return false;
   } else {
-    // Allow up to 2 half-day bookings per venue per day
     const halfDayCount = existingBookings.filter(b => !b.is_full_day).length;
     if (halfDayCount >= 2) return false;
   }
