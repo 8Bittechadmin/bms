@@ -295,12 +295,13 @@ const Bookings: React.FC = () => {
           onValueChange={setActiveTab}
           className="w-full max-w-md"
         >
-          <TabsList className="grid grid-cols-4">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-          </TabsList>
+          <TabsList className="grid grid-cols-4 gap-1 p-1">
+  <TabsTrigger value="all" className="text-xs px-1 py-2">All</TabsTrigger>
+  <TabsTrigger value="confirmed" className="text-xs px-1 py-2">Confirmed</TabsTrigger>
+  <TabsTrigger value="pending" className="text-xs px-1 py-2">Pending</TabsTrigger>
+  <TabsTrigger value="cancelled" className="text-xs px-1 py-2">Cancelled</TabsTrigger>
+</TabsList>
+
         </Tabs>
         
         <div className="flex gap-2">

@@ -135,15 +135,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
           mode="single"
           selected={selectedDate}
           onSelect={setSelectedDate}
-          className="p-3 pointer-events-auto"
+          className="p-3 pointer-events-auto w-full max-w-full"
           components={{
             DayContent: ({ date }) => {
               const bookingsOnDate = getBookingsForDate(date);
               return (
-                <div className={`flex flex-col justify-center items-center h-full ${getDayClassName(date)}`}>
-                  <span>{date.getDate()}</span>
+                <div className={`flex flex-col items-center justify-center w-10 h-10 mx-auto rounded-full ${getDayClassName(date)}`}>
+                  <span className="text-sm leading-none">{date.getDate()}</span>
                   {bookingsOnDate.length > 0 && (
-                    <span className="text-xs mt-1">{bookingsOnDate.length}</span>
+                    <span className="text-[10px] mt-0.5 leading-none">{bookingsOnDate.length}</span>
                   )}
                 </div>
               );
