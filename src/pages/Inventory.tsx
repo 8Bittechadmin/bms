@@ -35,9 +35,9 @@ const Inventory: React.FC = () => {
     category: 'all',
     sortBy: 'name'
   });
-  
+
   const queryClient = useQueryClient();
-  
+
   const { data: inventoryItems, isLoading } = useQuery({
     queryKey: ['inventory'],
     queryFn: async () => {
@@ -45,19 +45,19 @@ const Inventory: React.FC = () => {
         .from('inventory')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data || [];
     },
   });
-  
+
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
       const { error } = await supabase
         .from('inventory')
         .delete()
         .eq('id', itemId);
-      
+
       if (error) throw error;
       return { success: true };
     },
@@ -76,7 +76,7 @@ const Inventory: React.FC = () => {
       });
     }
   });
-  
+
   // Categories for quick filtering
   const categories = [
     { name: 'All', value: 'all' },
@@ -86,7 +86,7 @@ const Inventory: React.FC = () => {
     { name: 'Tableware', value: 'tableware' },
     { name: 'Decor', value: 'decor' }
   ];
-  
+
   // Status options for filtering
   const statusOptions = [
     { name: 'All', value: 'all' },
@@ -95,7 +95,7 @@ const Inventory: React.FC = () => {
     { name: 'Out of Stock', value: 'out' },
     { name: 'On Order', value: 'on-order' }
   ];
-  
+
   // Sort options
   const sortOptions = [
     { name: 'Name (A-Z)', value: 'name' },
@@ -104,58 +104,58 @@ const Inventory: React.FC = () => {
     { name: 'Quantity (Low-High)', value: 'quantity' },
     { name: 'Recently Added', value: 'created_at-desc' }
   ];
-  
+
   // Filter items based on criteria
   const filteredItems = (inventoryItems || []).filter(item => {
     // Filter by tab category
     const matchesTabCategory = activeCategory === 'all' || item.category === activeCategory;
-    
+
     // Filter by dropdown status filter
-    const matchesStatus = 
-      filterOptions.status === 'all' || 
+    const matchesStatus =
+      filterOptions.status === 'all' ||
       item.status === filterOptions.status;
-    
+
     // Filter by dropdown category filter
-    const matchesCategory = 
-      filterOptions.category === 'all' || 
+    const matchesCategory =
+      filterOptions.category === 'all' ||
       item.category === filterOptions.category;
-    
+
     // Filter by search query
-    const matchesSearch = searchQuery === '' || 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = searchQuery === '' ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.notes && item.notes.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
     return matchesTabCategory && matchesStatus && matchesCategory && matchesSearch;
   });
-  
+
   // Sort filtered items
   const sortedItems = [...filteredItems].sort((a, b) => {
     const [field, direction] = filterOptions.sortBy.split('-');
-    
+
     if (field === 'name') {
-      return direction === 'desc' 
-        ? b.name.localeCompare(a.name) 
+      return direction === 'desc'
+        ? b.name.localeCompare(a.name)
         : a.name.localeCompare(b.name);
     }
-    
+
     if (field === 'quantity') {
-      return direction === 'desc' 
-        ? b.quantity - a.quantity 
+      return direction === 'desc'
+        ? b.quantity - a.quantity
         : a.quantity - b.quantity;
     }
-    
+
     if (field === 'created_at') {
-      return direction === 'desc' 
+      return direction === 'desc'
         ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         : new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     }
-    
+
     return 0;
   });
-  
+
   const getStatusColor = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'in-stock': return 'bg-green-100 text-green-800 hover:bg-green-200';
       case 'low': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
       case 'out': return 'bg-red-100 text-red-800 hover:bg-red-200';
@@ -163,9 +163,9 @@ const Inventory: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
   };
-  
+
   const getStatusLabel = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'in-stock': return 'In Stock';
       case 'low': return 'Low Stock';
       case 'out': return 'Out of Stock';
@@ -173,28 +173,28 @@ const Inventory: React.FC = () => {
       default: return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
-  
+
   const handleEditItem = (item: any) => {
     setSelectedItem(item);
     setIsEditModalOpen(true);
   };
-  
+
   const handleDeleteItem = (item: any) => {
     setSelectedItem(item);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const confirmDelete = () => {
     if (selectedItem) {
       deleteItemMutation.mutate(selectedItem.id);
       setIsDeleteDialogOpen(false);
     }
   };
-  
+
   const applyFilter = () => {
     setFilterOpen(false);
   };
-  
+
   const resetFilter = () => {
     setFilterOptions({
       status: 'all',
@@ -203,17 +203,17 @@ const Inventory: React.FC = () => {
     });
     setFilterOpen(false);
   };
-  
+
   // Calculate statistics
   const totalItems = inventoryItems?.length || 0;
   const itemsInStock = inventoryItems?.filter(item => item.status === 'in-stock').length || 0;
   const lowStockAlerts = inventoryItems?.filter(item => item.status === 'low').length || 0;
   const outOfStock = inventoryItems?.filter(item => item.status === 'out').length || 0;
-  
+
   return (
     <AppLayout>
-      <PageHeader 
-        title="Inventory Management" 
+      <PageHeader
+        title="Inventory Management"
         description="Track and manage your event inventory"
         action={{
           label: "Add Item",
@@ -221,8 +221,8 @@ const Inventory: React.FC = () => {
           onClick: () => setIsAddItemModalOpen(true)
         }}
       />
-      
-      <div className="grid gap-6 md:grid-cols-4 mb-6">
+
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Items</CardTitle>
@@ -232,6 +232,7 @@ const Inventory: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">{categories.length - 1} categories</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Items In Stock</CardTitle>
@@ -246,6 +247,7 @@ const Inventory: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">{Math.round((itemsInStock / totalItems) * 100) || 0}% of inventory</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
@@ -260,6 +262,7 @@ const Inventory: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">Items need restock</p>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
@@ -275,13 +278,14 @@ const Inventory: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
+
+
       <div className="mb-6">
         <Tabs defaultValue="all" value={activeCategory} onValueChange={setActiveCategory} className="w-full">
           <TabsList className="flex flex-wrap h-auto gap-2 bg-transparent p-0 mb-4">
             {categories.map(category => (
-              <TabsTrigger 
-                key={category.value} 
+              <TabsTrigger
+                key={category.value}
                 value={category.value}
                 className="rounded-full px-3 py-1 text-xs h-auto data-[state=active]:shadow-none"
               >
@@ -289,12 +293,12 @@ const Inventory: React.FC = () => {
               </TabsTrigger>
             ))}
           </TabsList>
-          
+
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input 
-                placeholder="Search inventory..." 
+              <Input
+                placeholder="Search inventory..."
                 className="w-full pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -314,7 +318,7 @@ const Inventory: React.FC = () => {
                     <select
                       className="w-full text-sm p-2 border border-input rounded-md"
                       value={filterOptions.status}
-                      onChange={(e) => setFilterOptions({...filterOptions, status: e.target.value})}
+                      onChange={(e) => setFilterOptions({ ...filterOptions, status: e.target.value })}
                     >
                       {statusOptions.map(option => (
                         <option key={option.value} value={option.value}>
@@ -328,7 +332,7 @@ const Inventory: React.FC = () => {
                     <select
                       className="w-full text-sm p-2 border border-input rounded-md"
                       value={filterOptions.category}
-                      onChange={(e) => setFilterOptions({...filterOptions, category: e.target.value})}
+                      onChange={(e) => setFilterOptions({ ...filterOptions, category: e.target.value })}
                     >
                       {categories.map(option => (
                         <option key={option.value} value={option.value}>
@@ -342,7 +346,7 @@ const Inventory: React.FC = () => {
                     <select
                       className="w-full text-sm p-2 border border-input rounded-md"
                       value={filterOptions.sortBy}
-                      onChange={(e) => setFilterOptions({...filterOptions, sortBy: e.target.value})}
+                      onChange={(e) => setFilterOptions({ ...filterOptions, sortBy: e.target.value })}
                     >
                       {sortOptions.map(option => (
                         <option key={option.value} value={option.value}>
@@ -361,7 +365,7 @@ const Inventory: React.FC = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          
+
           <TabsContent value={activeCategory} className="m-0">
             <Card>
               <CardContent className="p-0">
@@ -399,17 +403,17 @@ const Inventory: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8"
                                 onClick={() => handleEditItem(item)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
                                 onClick={() => handleDeleteItem(item)}
                               >
@@ -427,12 +431,12 @@ const Inventory: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-      
+
       <AddInventoryItemModal
         open={isAddItemModalOpen}
         onOpenChange={setIsAddItemModalOpen}
       />
-      
+
       {selectedItem && (
         <>
           <InventoryItemModal
@@ -440,7 +444,7 @@ const Inventory: React.FC = () => {
             onOpenChange={setIsEditModalOpen}
             item={selectedItem}
           />
-          
+
           <DeleteConfirmDialog
             open={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}

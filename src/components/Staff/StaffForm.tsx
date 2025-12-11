@@ -38,40 +38,40 @@ const StaffForm: React.FC<StaffFormProps> = ({
   });
 
   return (
-  <Form {...form}>
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
-      {/* Scrollable content wrapper */}
-      <div className="h-[70vh] overflow-y-scroll pr-2 space-y-4">
-
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4 h-screen sm:h-[70vh] overflow-y-auto p-4"
+      >
+        {/* Form fields */}
         <InputField
           form={form}
           name="name"
           label="Staff Name"
           placeholder="Enter staff member's full name"
         />
-        
+
         <InputField
           form={form}
           name="position"
           label="Position"
           placeholder="Enter staff position"
         />
-        
+
         <SelectField
           form={form}
           name="department"
           label="Department"
           options={DEPARTMENT_OPTIONS}
         />
-        
+
         <InputField
           form={form}
           name="contact"
           label="Contact Email"
           placeholder="Enter email address"
         />
-        
+
         <SelectField
           form={form}
           name="status"
@@ -79,20 +79,18 @@ const StaffForm: React.FC<StaffFormProps> = ({
           options={STATUS_OPTIONS}
         />
 
-      </div>
+        <DialogFooter className="pt-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Save Staff'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
 
-      <DialogFooter className="pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save Staff'}
-        </Button>
-      </DialogFooter>
-
-    </form>
-  </Form>
-);
+  );
 
 };
 
