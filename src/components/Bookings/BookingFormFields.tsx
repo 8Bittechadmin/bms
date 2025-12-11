@@ -43,11 +43,11 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
       // Set default start time to 9 AM on the selected date
       const startDate = new Date(preSelectedDate);
       startDate.setHours(9, 0, 0, 0);
-      
+
       // Set default end time to 5 PM on the selected date
       const endDate = new Date(preSelectedDate);
       endDate.setHours(17, 0, 0, 0);
-      
+
       form.setValue('start_date', startDate.toISOString().slice(0, 16));
       form.setValue('end_date', endDate.toISOString().slice(0, 16));
     }
@@ -60,7 +60,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         .from('clients')
         .select('*')
         .order('name') as any;
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -73,11 +73,81 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         .from('venues')
         .select('*')
         .order('name') as any;
-      
+
       if (error) throw error;
       return data || [];
     },
   });
+
+  const { data: allBookings = [] } = useQuery({
+    queryKey: ['all-venue-bookings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`id, venue_id, start_date, end_date, is_full_day, status`)
+        .eq('status', 'confirmed');
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  useEffect(() => {
+    if (!venues.length) return;
+
+    const selectedDate = form.watch('start_date')
+      ? form.watch('start_date').split('T')[0]
+      : null;
+
+    const updatedVenueOptions = venues.map(venue => {
+      const bookingsForVenue = allBookings.filter(b => b.venue_id === venue.id);
+
+      let isFullDayBooked = false;
+      let morningBooked = false;
+      let eveningBooked = false;
+
+      if (selectedDate) {
+        bookingsForVenue.forEach(b => {
+          const bookingDate = b.start_date.split("T")[0];
+
+          if (bookingDate === selectedDate) {
+            if (b.is_full_day) {
+              isFullDayBooked = true;
+            } else {
+              const startHour = new Date(b.start_date).getHours();
+              if (startHour < 12) morningBooked = true;
+              else eveningBooked = true;
+            }
+          }
+        });
+      }
+
+      let labelSuffix = "";
+      let disabled = false;
+
+      if (isFullDayBooked) {
+        labelSuffix = "(Full Day Booked)";
+        disabled = true;
+      } else if (morningBooked && eveningBooked) {
+        labelSuffix = "(Half Day – Both Slots Booked)";
+        disabled = true;
+      } else if (morningBooked) {
+        labelSuffix = "(Available – Evening Only)";
+      } else if (eveningBooked) {
+        labelSuffix = "(Available – Morning Only)";
+      } else {
+        labelSuffix = "(Available – Full Day)";
+      }
+
+      return {
+        value: venue.id,
+        label: `${venue.name} ${labelSuffix}`,
+        disabled
+      };
+    });
+
+    setVenueOptions(updatedVenueOptions);
+  }, [venues, allBookings, form.watch("start_date")]);
 
   // Check for booking conflicts when a venue is selected
   const selectedVenueId = form.watch('venue_id');
@@ -85,7 +155,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
     queryKey: ['venue-bookings', selectedVenueId],
     queryFn: async () => {
       if (!selectedVenueId) return [];
-      
+
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -100,7 +170,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         .eq('venue_id', selectedVenueId)
         .eq('status', 'confirmed')
         .neq('status', 'cancelled') as any;
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -131,7 +201,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
       if (name === 'event_type') {
         const isWedding = value.event_type === 'wedding';
         setIsWeddingEvent(isWedding);
-        
+
         // If switching to wedding, set defaults for wedding form
         if (isWedding && !isFormReadOnly) {
           form.setValue('is_full_day', true);
@@ -141,12 +211,12 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         }
       } else if (name === 'is_full_day') {
         setIsFullDay(value.is_full_day);
-        
+
         // Auto-set start and end dates based on full/half day selection
         if (!isFormReadOnly && form.getValues('start_date')) {
           const selectedDate = form.getValues('start_date').split('T')[0];
           const timeOfDay = form.getValues('time_of_day');
-          
+
           if (value.is_full_day) {
             // Full day: 9 AM to 5 PM
             form.setValue('start_date', `${selectedDate}T09:00`);
@@ -168,7 +238,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         if (!isFormReadOnly && form.getValues('start_date')) {
           const selectedDate = form.getValues('start_date').split('T')[0];
           const timeOfDay = value.time_of_day;
-          
+
           if (timeOfDay === 'morning') {
             form.setValue('start_date', `${selectedDate}T09:00`);
             form.setValue('end_date', `${selectedDate}T13:00`);
@@ -182,13 +252,13 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         const isWedding = form.getValues('event_type') === 'wedding';
         const isFullDay = form.getValues('is_full_day');
         const timeOfDay = form.getValues('time_of_day');
-        
+
         if (isWedding) {
           updatePricing(value.venue_id, isFullDay, form, !isFullDay ? timeOfDay : undefined);
         }
       }
     });
-    
+
     return () => subscription.unsubscribe();
   }, [form, isFormReadOnly]);
 
@@ -231,13 +301,13 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
   // Check if the selected date has any existing bookings
   const checkDateBookingConflicts = () => {
     if (!venueBookings.length || !form.getValues('start_date') || isFormReadOnly) return;
-    
+
     const selectedDate = form.getValues('start_date').split('T')[0];
     const bookingsOnDate = venueBookings.filter(booking => {
       const bookingDate = new Date(booking.start_date).toISOString().split('T')[0];
       return bookingDate === selectedDate && booking.id !== form.getValues('id');
     });
-    
+
     // If there are bookings on this date, check for conflicts
     if (bookingsOnDate.length > 0) {
       const hasFullDayBooking = bookingsOnDate.some(booking => booking.is_full_day);
@@ -254,19 +324,19 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
       // Check for morning/evening conflicts for half-day bookings
       if (!form.getValues('is_full_day')) {
         const selectedTimeOfDay = form.getValues('time_of_day');
-        
+
         const hasConflictingTimeSlot = bookingsOnDate.some(booking => {
           if (!booking.is_full_day) {
             // Get the time of the existing booking
             const bookingStartHour = new Date(booking.start_date).getHours();
             const existingTimeSlot = bookingStartHour < 12 ? 'morning' : 'evening';
-            
+
             // If the same time slot is booked, we have a conflict
             return existingTimeSlot === selectedTimeOfDay;
           }
           return false;
         });
-        
+
         if (hasConflictingTimeSlot) {
           form.setError('time_of_day', {
             type: 'manual',
@@ -280,7 +350,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
   // Check for booking conflicts when start date, venue, or booking type changes
   useEffect(() => {
     if (isFormReadOnly) return;
-    
+
     const subscription = form.watch((value, { name }) => {
       if (['start_date', 'venue_id', 'is_full_day', 'time_of_day'].includes(name as string)) {
         // Clear any existing errors
@@ -288,7 +358,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         checkDateBookingConflicts();
       }
     });
-    
+
     return () => subscription.unsubscribe();
   }, [venueBookings, form, isFormReadOnly]);
 
@@ -312,7 +382,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
             placeholder="Enter event name"
             disabled={isFormReadOnly}
           />
-          
+
           <SelectField
             form={form}
             name="event_type"
@@ -323,9 +393,9 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
         </div>
 
         {isWeddingEvent ? (
-          <WeddingFormFields 
-            form={form} 
-            bookings={venueBookings} 
+          <WeddingFormFields
+            form={form}
+            bookings={venueBookings}
             readOnly={isFormReadOnly}
           />
         ) : (
@@ -352,6 +422,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
           name="venue_id"
           label="Venue"
           options={venueOptions}
+          getOptionDisabled={(option) => option.disabled}
           disabled={isFormReadOnly}
         />
 
@@ -369,7 +440,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
                 const selectedDate = e.target.value;
                 const isFullDay = form.getValues('is_full_day') ?? true;
                 const timeOfDay = form.getValues('time_of_day');
-                
+
                 if (isFullDay) {
                   // Full day: 9 AM to 5 PM
                   form.setValue('start_date', `${selectedDate}T09:00`);
@@ -405,7 +476,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
                     const isFullDay = value === 'full';
                     field.onChange(isFullDay);
                     form.setValue('is_full_day', isFullDay);
-                    
+
                     if (!isFullDay) {
                       // Set default to morning for half day
                       form.setValue('time_of_day', 'morning');
@@ -475,7 +546,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
               disabled={isFormReadOnly}
             />
           </div>
-          
+
           <div>
             <label className="text-sm font-medium">Total Amount</label>
             <input
@@ -494,7 +565,7 @@ const BookingFormFields: React.FC<BookingFormFieldsProps> = ({ form, preSelected
               disabled={isFormReadOnly}
             />
           </div>
-          
+
           <div>
             <label className="text-sm font-medium">Deposit Amount</label>
             <input
