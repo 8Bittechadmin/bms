@@ -33,7 +33,7 @@ export const BookingFormSchema = z.object({
 })
 .refine((data, ctx) => {
   // Get existing bookings from context
-  const bookings: BookingFormValues[] = ctx.options?.context?.bookings || [];
+  const bookings: BookingFormValues[] = ctx.options?.context?.bookings ?? [];
   const selectedDate = data.start_date?.split('T')[0];
   if (!selectedDate) return true;
 

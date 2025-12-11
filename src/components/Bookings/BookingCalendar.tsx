@@ -43,8 +43,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings, venues }) =
     const formattedDate = format(date, 'yyyy-MM-dd');
     return bookings.filter(b => {
       if (!b.start_date) return false;
-      const start = b.start_date.split('T')[0];
-      const end = b.end_date ? b.end_date.split('T')[0] : start;
+      const start = b.start_date?.split('T')[0] ?? '';
+      const end = b.end_date?.split('T')[0] ?? start;
       return start <= formattedDate && end >= formattedDate;
     });
   };
@@ -53,9 +53,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings, venues }) =
 
   useEffect(() => {
     if (!selectedDate) return;
+    const bookingsForDate = getBookingsForDate(selectedDate);
 
     const availability = venues.map(v => {
-      const venueBookings = selectedDateBookings.filter(b => b.venue?.id === v.id);
+      const venueBookings = bookingsForDate.filter(b => b.venue && b.venue.id === v.id);
       const fullDayBooked = venueBookings.some(b => b.is_full_day);
 
       const halfDayMorningCount = venueBookings.filter(b => !b.is_full_day && b.time_of_day === 'morning').length;
@@ -63,14 +64,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings, venues }) =
 
       return {
         venue: v,
-        fullDayAvailable: !fullDayBooked, // only one full day booking allowed
+        fullDayAvailable: !fullDayBooked,
         morningAvailable: halfDayMorningCount < 2 && !fullDayBooked,
         eveningAvailable: halfDayEveningCount < 2 && !fullDayBooked,
       };
     });
 
     setAvailableVenues(availability);
-  }, [selectedDate, selectedDateBookings, venues]);
+  }, [selectedDate, venues]);
+
 
   const getDayClassName = (date: Date) => {
     const bookingsOnDate = getBookingsForDate(date);
