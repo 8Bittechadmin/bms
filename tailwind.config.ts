@@ -118,7 +118,7 @@ export default {
 				'fade-up': 'fade-up 0.5s ease-out'
 			},
 			padding: {
-				DEFAULT: '0.1rem', // left & right
+				'px-0.1': '0.1rem', // adds class `px-0.1`
 			}
 		}
 	},
