@@ -206,6 +206,7 @@ const Staff: React.FC = () => {
     flex-wrap
     gap-2
     w-full
+    pb-4
   "
 >
   <TabsTrigger value="directory">Staff Directory</TabsTrigger>
@@ -216,7 +217,7 @@ const Staff: React.FC = () => {
 
 
         <TabsContent value="directory" className="space-y-4 m-0">
-          <div className="flex flex-col md:flex-row gap-4 mb-4 justify-between">
+          <div className="flex flex-col md:flex-row gap-4 mb-4 justify-between pt-4">
             <div className="relative flex-grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
