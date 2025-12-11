@@ -21,32 +21,38 @@ export const BookingFormSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   is_full_day: z.boolean().optional().nullable(),
-  time_of_day: z.enum(['morning','evening']).optional().nullable(), // 'morning' | 'evening'
+  time_of_day: z.enum(['morning', 'evening']).optional().nullable(), // 'morning' | 'evening'
 })
+// Ensure either client_name or client_id is provided
 .refine((data) => !!data.client_name || !!data.client_id, {
   message: 'Client information is required',
   path: ['client_id'],
 })
+// Ensure time_of_day is set for half-day bookings
 .refine((data) => data.is_full_day === false ? !!data.time_of_day : true, {
   message: 'Time of day is required for half-day bookings',
   path: ['time_of_day'],
 })
+// Venue-aware booking conflict validation
 .refine((data, ctx) => {
-  // venue-aware booking conflict validation
   const bookings: BookingFormValues[] = ctx.options?.context?.bookings ?? [];
   const selectedDate = data.start_date?.split('T')[0];
-  if (!selectedDate) return true;
+  const venueId = data.venue_id;
+
+  if (!selectedDate || !venueId) return true;
 
   // Filter bookings for the same date and venue, excluding current booking if editing
   const existingBookings = bookings.filter(b => {
-  const bDate = b.start_date?.split('T')[0];
-  return bDate === selectedDate && b.id !== data.id && b.venue_id === data.venue_id;
-});
+    const bDate = b.start_date?.split('T')[0];
+    return bDate === selectedDate && b.id !== data.id && b.venue_id === venueId;
+  });
 
   if (data.is_full_day) {
+    // Only one full-day booking allowed per venue per date
     const hasFullDayBooking = existingBookings.some(b => b.is_full_day);
     if (hasFullDayBooking) return false;
   } else {
+    // Max two half-day bookings per venue per date
     const halfDayCount = existingBookings.filter(b => !b.is_full_day).length;
     if (halfDayCount >= 2) return false;
   }
