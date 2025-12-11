@@ -130,7 +130,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ bookings }) =>
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-md border p-4">
+      <div className="bg-white rounded-md border p-4 w-full">
         <CalendarComponent
           mode="single"
           selected={selectedDate}
